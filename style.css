@@ -1,0 +1,17 @@
+.center-title {
+    text-align: center;
+    padding: 1.5rem;
+}
+
+.form-col {
+    max-width: 20rem;
+    margin: 0 auto;
+}
+
+footer {
+    text-align: center;
+}
+
+.center-button {
+    text-align: center;
+}

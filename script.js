@@ -185,8 +185,7 @@ function prepTicketEntry(sheetId, studentPrice, gaPrice) {
                       showAfterLoad('#ticket-entry');
                   });
             }).catch(function (err) {
-                console.log(err);
-                errorNoTicket('The banner ID has already been used to buy a ticket.');
+                errorNoTicket(err);
                 showAfterLoad('#ticket-entry');
             });
 
@@ -200,10 +199,11 @@ function prepTicketEntry(sheetId, studentPrice, gaPrice) {
 }
 
 function checkBannerId(sheetId, bannerId) {
-    return readBannerIdRow(sheetId).then(function (previousBannerIds) {
+    return readBannerIdRow(sheetId).catch(function (err) {
+        return Promise.reject(err.result.error.message);
+    }).then(function (previousBannerIds) {
         if (previousBannerIds.includes(bannerId)) {
-            // the banner id has already been used
-            return Promise.reject();
+            return Promise.reject('The banner ID has already been used.');
         } else {
             // it hasn't been used before
             return true;

@@ -19,72 +19,71 @@
         <i>Created to help maintain Allison's sanity</i>
     </div>
     <div class="form-col">
-        <form>
-            <div id="auth">
-                <p>The kiosk will log all ticket purchases into a Google Sheet. First, you'll need to login to your Google account.</p>
-                <div class="center-button">
-                    <button type="button" class="btn btn-primary" id="sheets-login">Login to Google</button>
+        <div id="loading">
+            Loading...
+        </div>
+        <div id="auth">
+            <p>The kiosk will log all ticket purchases into a Google Sheet. First, you'll need to login to your Google account.</p>
+            <div class="center-button">
+                <button type="button" class="btn btn-primary" id="sheets-login">Login to Google</button>
+            </div>
+        </div>
+
+        <form id="sheet-setup">
+            <div class="form-group">
+                <label for="sheet-link">Link to Google Sheet:</label>
+                <input type="text" class="form-control" id="sheet-link" placeholder="eg. https://docs.google.com/spreadsheets/d/1r5kCPIJnO3WCYh5xG2HAotK0ljYBcWTXIyLor3oVDUI/edit#gid=228263265">
+            </div>
+            <div class="form-group">
+                <label for="student-price">Student Ticket Price:</label>
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">$</span>
+                    </div>
+                    <input type="number" class="form-control" id="student-price">
                 </div>
             </div>
 
-            <div id="sheet-setup">
-                <div class="form-group">
-                    <label for="sheet-link">Link to Google Sheet:</label>
-                    <input type="text" class="form-control" id="sheet-link" placeholder="eg. https://docs.google.com/spreadsheets/d/1r5kCPIJnO3WCYh5xG2HAotK0ljYBcWTXIyLor3oVDUI/edit#gid=228263265">
-                </div>
-                <div class="form-group">
-                    <label for="student-price">Student Ticket Price:</label>
-                    <div class="input-group mb-3">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text">$</span>
-                        </div>
-                        <input type="number" class="form-control" id="student-price">
+            <div class="form-group">
+                <label for="ga-price">GA Ticket Price:</label>
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">$</span>
                     </div>
+                    <input type="number" class="form-control" id="ga-price">
                 </div>
+            </div>
+            <div class="center-button">
+                <button type="submit" class="btn btn-primary">Start Kiosk</button>
+            </div>
+        </form>
 
-                <div class="form-group">
-                    <label for="ga-price">GA Ticket Price:</label>
-                    <div class="input-group mb-3">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text">$</span>
-                        </div>
-                        <input type="number" class="form-control" id="ga-price">
-                    </div>
+        <form id="ticket-entry">
+            <label for="banner-id">Select ticket type:</label>
+            <div id="ticket-type">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="exampleRadios" id="student-radio" value="option1" checked>
+                    <label class="form-check-label" for="student-radio">
+                        Student
+                    </label>
                 </div>
-                <div class="center-button">
-                    <button type="submit" class="btn btn-primary">Start Kiosk</button>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="exampleRadios" id="ga-radio" value="option2">
+                    <label class="form-check-label" for="ga-radio">
+                        General Admission
+                    </label>
                 </div>
-            </form>
-        </div>
-
-        <div id="form">
-            <form>
-                <label for="banner-id">Select ticket type:</label>
-                <div id="ticket-type">
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="exampleRadios" id="student-radio" value="option1" checked>
-                        <label class="form-check-label" for="student-radio">
-                            Student
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="exampleRadios" id="ga-radio" value="option2">
-                        <label class="form-check-label" for="ga-radio">
-                            General Admission
-                        </label>
-                    </div>
-                </div>
-                <br>
-                <div class="form-group">
-                    <label for="banner-id">Banner ID:</label>
-                    <input type="text" class="form-control" id="banner-id" maxlength="9" placeholder="Click this box, then scan card">
-                    <small id="emailHelp" class="form-text text-muted">The student cannot read their number to you; they must have their card.</small>
-                </div>
-                <div class="center-button">
-                    <button type="submit" class="btn btn-primary">Submit</button>
-                </div>
-            </form>
-        </div>
+            </div>
+            <br>
+            <div class="form-group">
+                <label for="banner-id">Banner ID:</label>
+                <input type="text" class="form-control" id="banner-id" maxlength="9" placeholder="Click this box, then scan card">
+                <small id="emailHelp" class="form-text text-muted">The student cannot read their number to you; they must have their card.</small>
+            </div>
+            <div class="center-button">
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
         <br>
         <hr/>
     </div>
@@ -105,5 +104,11 @@
 
     <!-- Custom JS -->
     <script src="script.js"></script>
+
+    <!-- Google API -->
+    <script async defer src="https://apis.google.com/js/api.js"
+        onload="this.onload=function(){};handleClientLoad()"
+        onreadystatechange="if (this.readyState === 'complete') this.onload()">
+    </script>
   </body>
 </html>

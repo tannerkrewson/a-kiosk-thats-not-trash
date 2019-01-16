@@ -136,13 +136,17 @@ function prepTicketEntry(info) {
 
     // clear info of previous ticket sale
     info.bannerId = null;
+    info.quantity = null;
+    info.ticketType = null;
 
 	$('#ticket-entry').off('submit');
 	$('#ticket-entry').on('submit', () => {
 		event.preventDefault();
 		showLoading();
 
-		let isStudentRadioSelected = $('#student-radio').val();
+        let isStudentRadioSelected = $('#student-radio').val();
+        
+        info.ticketType = isStudentRadioSelected ? 'student' : 'GA';
 
 		if (isStudentRadioSelected) {
             sellStudentTicket(info);
@@ -161,18 +165,31 @@ function sellStudentTicket(info) {
 
     // TODO: Validate banner id format
     info.bannerId = bannerId;
+    info.quantity = 1;
 
     // make sure this student has not already purchased a ticket
     return checkBannerId(info.sheetId, info.bannerId)
 
         // ran when banner id is verfied to not have been used before
-        .then(() => Swal({
-            title: `Ask them for $${info.studentPrice}`,
-            text: "If they don't have the money, click cancel.",
-            type: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'They have the money!'
-        }))
+        .then(() => confirmPayment(info))
+
+        // ran after payment is either confirmed or denied
+        .then(() => prepTicketEntry(info));
+}
+
+function confirmPayment(info) {
+    const totalPrice = info.quantity * info.studentPrice;
+    const plural = info.quantity !== 1 ? 's' : '';
+
+    // TODO: if tickets are free, disable confirmation
+
+    return Swal({
+        title: `Ask them for $${totalPrice}.`,
+        text: `They will receive ${info.quantity} ${info.ticketType} ticket${plural}. If they don't have the money, click cancel.`,
+        type: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'I got the money!'
+    })
 
         .then( res => {
             const didUserConfirmPayment = res.value;
@@ -184,9 +201,7 @@ function sellStudentTicket(info) {
         .catch(err => {
             console.error(err);
             errorNoTicket(err);
-        })
-
-        .then(() => prepTicketEntry(info));
+        });
 }
 
 function checkBannerId(sheetId, enteredBannerId) {
@@ -206,9 +221,15 @@ function checkBannerId(sheetId, enteredBannerId) {
 }
 
 function logTicketSale(info) {
+    const plural = info.quantity !== 1 ? 's' : '';
+
     return writeStudentToSpreadsheet(info.sheetId, info.bannerId)
 
-        .then(() => Swal('Give them their ticket!', 'yeet', 'success'))
+        .then(() => Swal(
+            `Give them ${info.quantity} ${info.ticketType} ticket${info.plural}!`,
+            'yeet',
+            'success'
+        ))
 
         // ran if the api throws an error
         .catch(res => {

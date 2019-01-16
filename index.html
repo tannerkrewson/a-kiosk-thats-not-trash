@@ -62,26 +62,34 @@
 				<label for="banner-id">Select ticket type:</label>
 				<div id="ticket-type">
 					<div class="form-check">
-						<input class="form-check-input" type="radio" name="ticket-type" id="student-radio" value="option1" checked>
+						<input class="form-check-input" type="radio" name="ticket-type" id="student-radio" value="student" checked>
 						<label class="form-check-label" for="student-radio">
 						Student
 						</label>
 					</div>
 					<div class="form-check">
-						<input class="form-check-input" type="radio" name="ticket-type" id="ga-radio" value="option2">
+						<input class="form-check-input" type="radio" name="ticket-type" id="ga-radio" value="GA">
 						<label class="form-check-label" for="ga-radio">
 						General Admission
 						</label>
 					</div>
 				</div>
 				<br>
-				<div class="form-group">
-					<label for="banner-id">Banner ID:</label>
-					<input type="text" class="form-control" id="banner-id" maxlength="9" placeholder="Click this box, then scan card">
-					<small id="emailHelp" class="form-text text-muted">The student cannot read their number to you; they must have their card.</small>
+				<div id="student-options">
+					<div class="form-group">
+						<label for="banner-id">Banner ID:</label>
+						<input type="text" class="form-control" id="banner-id" maxlength="9" placeholder="Click this box, then scan card">
+						<small id="emailHelp" class="form-text text-muted">The student cannot read their number to you; they must have their card.</small>
+					</div>
+				</div>
+				<div id="ga-options">
+					<div class="form-group">
+						<label for="banner-id">Quantity:</label>
+						<input type="number" class="form-control" id="quantity" maxlength="2">
+					</div>
 				</div>
 				<div class="center-button">
-					<button type="submit" class="btn btn-primary">Submit</button>
+					<button type="submit" class="btn btn-primary">Calculate price</button>
 				</div>
 			</form>
 

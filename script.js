@@ -47,37 +47,6 @@ function initClient() {
 	});
 }
 
-/*
-CUSTOM CODE
-*/
-
-/**
- *  Called when the signed in status changes, to update the UI
- *  appropriately. After a sign-in, the API is called.
- */
-function updateSigninStatus(isSignedIn) {
-	if (isSignedIn) {
-		showAfterLoad('#sheet-setup');
-	} else {
-		showAfterLoad('#auth');
-	}
-}
-
-/**
- *  Sign in the user upon button click.
- */
-function handleAuthClick(event) {
-	showLoading();
-	gapi.auth2.getAuthInstance().signIn();
-}
-
-/**
- *  Sign out the user upon button click.
- */
-function handleSignoutClick(event) {
-	gapi.auth2.getAuthInstance().signOut();
-}
-
 /**
  * Append a pre element to the body containing the given message
  * as its text node. Used to display the results of the API call.
@@ -88,6 +57,33 @@ function appendPre(message) {
 	let pre = document.getElementById('content');
 	let textContent = document.createTextNode(`${message}\n`);
 	pre.appendChild(textContent);
+}
+
+
+/*
+CUSTOM CODE
+*/
+
+const TICKET_TYPE_RADIO_GROUP = $('input[type=radio][name=ticket-type]');
+
+// ran when sign in the user upon button click.
+function handleAuthClick(event) {
+	showLoading();
+	gapi.auth2.getAuthInstance().signIn();
+}
+
+// ran when signout button is clicked (there isn't one right now)
+function handleSignoutClick(event) {
+	gapi.auth2.getAuthInstance().signOut();
+}
+
+// ran when google is logged in or out
+function updateSigninStatus(isSignedIn) {
+	if (isSignedIn) {
+		showAfterLoad('#sheet-setup');
+	} else {
+		showAfterLoad('#auth');
+	}
 }
 
 function hideAll() {
@@ -125,6 +121,19 @@ $("#sheet-setup").on('submit', event => {
 	});
 });
 
+TICKET_TYPE_RADIO_GROUP.on('change', () => {
+    const selectedTicketType = getSelectedTicketType();
+
+    if (selectedTicketType === 'student') {
+        $('#student-options').show();
+        $('#ga-options').hide();
+    } else if (selectedTicketType === 'GA') {
+        $('#student-options').hide();
+        $('#ga-options').show();
+    }
+    
+});
+
 function checkIfSheetValid(spreadsheetId) {
 	return gapi.client.sheets.spreadsheets.get({
 		spreadsheetId
@@ -143,24 +152,20 @@ function prepTicketEntry(info) {
 	$('#ticket-entry').on('submit', () => {
 		event.preventDefault();
 		showLoading();
-
-        let isStudentRadioSelected = $('#student-radio').val();
         
-        info.ticketType = isStudentRadioSelected ? 'student' : 'GA';
+        info.ticketType = getSelectedTicketType();
 
-		if (isStudentRadioSelected) {
+		if (info.ticketType === 'student') {
             sellStudentTicket(info);
+		} else if (info.ticketType === 'GA') {
+			sellGATickets(info);
 		} else {
-			writeGaToSpreadsheet(info.sheetId).then(() => {
-				Swal('GA ticket good!', 'woohoo', 'success');
-				prepTicketEntry(info)
-			});
-		}
+            Swal('Bad ticket type selected: ' + info.ticketType);
+        }
 	});
 }
 
 function sellStudentTicket(info) {
-    // if it's a student ticket, grab the banner id
     const bannerId = $('#banner-id').val();
 
     // TODO: Validate banner id format
@@ -172,6 +177,24 @@ function sellStudentTicket(info) {
 
         // ran when banner id is verfied to not have been used before
         .then(() => confirmPayment(info))
+
+        // show error before resetting
+        .catch(err => errorNoTicket(err))
+
+        // ran after payment is either confirmed or denied
+        .then(() => prepTicketEntry(info));
+}
+
+function sellGATickets(info) {
+    const quantity = $('#quantity').val();
+
+    //TODO: Verify quanity
+    info.quantity = quantity;
+
+    return confirmPayment(info)
+
+        // show error before resetting
+        .catch(err => errorNoTicket(err))
 
         // ran after payment is either confirmed or denied
         .then(() => prepTicketEntry(info));
@@ -223,11 +246,11 @@ function checkBannerId(sheetId, enteredBannerId) {
 function logTicketSale(info) {
     const plural = info.quantity !== 1 ? 's' : '';
 
-    return writeStudentToSpreadsheet(info.sheetId, info.bannerId)
+    return appendPurchaseToSheet(info)
 
         .then(() => Swal(
-            `Give them ${info.quantity} ${info.ticketType} ticket${info.plural}!`,
-            'yeet',
+            `Give them ${info.quantity} ${info.ticketType} ticket${plural}!`,
+            'The purchase has been logged in the spreadsheet. Yeet.',
             'success'
         ))
 
@@ -244,22 +267,15 @@ function errorNoTicket(errorMessage) {
 	Swal('Don\'t give them a ticket!', errorMessage, 'error');
 }
 
-function writeStudentToSpreadsheet(spreadsheetId, bannerId) {
-	return writeRowToSheet([(new Date()).toUTCString(), 1, 'Student', bannerId], spreadsheetId);
-}
-
-function writeGaToSpreadsheet(sheetId) {
-	return writeRowToSheet([(new Date()).toUTCString(), 1, 'GA'], spreadsheetId);
-}
-
-function writeRowToSheet(row, spreadsheetId) {
+function appendPurchaseToSheet(info) {
+    const newRow = [(new Date()).toUTCString(), info.quantity, info.ticketType, info.bannerId || 'n/a'];
 	return gapi.client.sheets.spreadsheets.values.append({
-		spreadsheetId,
+		spreadsheetId: info.sheetId,
 		range: 'Sheet1',
 		valueInputOption: 'USER_ENTERED',
 		resource: {
 			majorDimension: "ROWS",
-			values: [row]
+			values: [newRow]
 		}
 	});
 };
@@ -282,4 +298,8 @@ function readBannerIdRow(spreadsheetId) {
             return [];
         }
     });
+}
+
+function getSelectedTicketType() {
+    return TICKET_TYPE_RADIO_GROUP.filter(':checked')[0].value;
 }

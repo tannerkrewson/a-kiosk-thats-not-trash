@@ -114,7 +114,6 @@ function listMajors() {
   });
 }
 
-
 function hideAll() {
     $('#auth').hide();
     $('#sheet-setup').hide();
@@ -131,11 +130,75 @@ function showAfterLoad(id) {
     $(id).show();
 }
 
-$("#sheet-setup").submit(function( event ) {
+$("#sheet-setup").on('submit', function( event ) {
     event.preventDefault();
+    showLoading();
+
     var sheetId = $('#sheet-link').val().split('/')[5];
     var studentPrice = $('#student-price').val();
     var gaPrice = $('#ga-price').val();
-    
-    
+
+    checkIfSheetValid(sheetId).then(function (response) {
+        // the sheet is a real google sheet!
+        showAfterLoad('#ticket-entry');
+
+        prepTicketEntry(sheetId, studentPrice, gaPrice);
+    }).catch(function(err) {
+        alert('Bad google sheet');
+        console.log(err);
+        
+    });
 });
+
+function checkIfSheetValid(spreadsheetId) {
+    return gapi.client.sheets.spreadsheets.get({
+        spreadsheetId 
+    });
+}
+
+function prepTicketEntry(sheetId, studentPrice, gaPrice) {
+    $('#ticket-entry').off('submit');
+    $('#ticket-entry').on('submit', function() {
+        event.preventDefault();
+        showLoading();
+
+        var isStudentRadioSelected = $('#student-radio').val();
+
+        if (isStudentRadioSelected) {
+            // if it's a student ticket, grab the banner id
+            var bannerId = $('#banner-id').val();
+
+            // make sure this student has not already purchased a ticket
+            checkBannerId(sheetId, bannerId);
+
+            writeStudentToSpreadsheet(sheetId, bannerId).then(function () {
+                alert('student ticket bought!');
+                showAfterLoad('#ticket-entry');
+            }).catch(function () {
+                alert('banner id already used');
+                showAfterLoad('#ticket-entry');
+            });
+        } else {
+            writeGaToSpreadsheet(sheetId).then(function () {
+                alert('ga ticket bought!');
+                showAfterLoad('#ticket-entry');
+            });
+        }
+    });
+}
+
+function checkBannerId(sheetId, bannerId) {
+    return true;
+}
+
+function writeStudentToSpreadsheet(sheetId, bannerId) {
+    return new Promise(function (resolve, reject) {
+        resolve();
+    });
+}
+
+function writeGaToSpreadsheet(sheetId) {
+    return new Promise(function (resolve, reject) {
+        resolve();
+    });
+}

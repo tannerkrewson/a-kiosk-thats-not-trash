@@ -165,22 +165,28 @@ function sellStudentTicket(info) {
     // make sure this student has not already purchased a ticket
     return checkBannerId(info.sheetId, info.bannerId)
 
-    // ran when banner id is verfied to not have been used before
-    .then(() => Swal({
-        title: `Ask them for $${info.studentPrice}`,
-        text: "If they don't have the money, click cancel.",
-        type: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'They have the money!'
-    }))
-    // value = true if the user confirms the above dialog
-    .then( ({value}) => (value ? logTicketSale(info) : false))
-    .catch(err => {
-        console.log(err);
-        
-        errorNoTicket(err);
-    })
-    .then(() => prepTicketEntry(info));
+        // ran when banner id is verfied to not have been used before
+        .then(() => Swal({
+            title: `Ask them for $${info.studentPrice}`,
+            text: "If they don't have the money, click cancel.",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'They have the money!'
+        }))
+
+        .then( res => {
+            const didUserConfirmPayment = res.value;
+            if (didUserConfirmPayment) {
+                return logTicketSale(info);
+            }
+        })
+
+        .catch(err => {
+            console.error(err);
+            errorNoTicket(err);
+        })
+
+        .then(() => prepTicketEntry(info));
 }
 
 function checkBannerId(sheetId, enteredBannerId) {
@@ -200,15 +206,17 @@ function checkBannerId(sheetId, enteredBannerId) {
 }
 
 function logTicketSale(info) {
-	writeStudentToSpreadsheet(info.sheetId, info.bannerId).then(() => {
-        Swal('Give them their ticket!', 'yeet', 'success');
-		prepTicketEntry(info);
-    }).catch(res => {
-        // grab the error message text from the api json
-        Promise.reject(res.result.error.message)
+    return writeStudentToSpreadsheet(info.sheetId, info.bannerId)
 
-        prepTicketEntry(info);
-    }) 
+        .then(() => Swal('Give them their ticket!', 'yeet', 'success'))
+
+        // ran if the api throws an error
+        .catch(res => {
+            console.error(res);
+
+            // grab the api's error message
+            throw res.result.error.message;
+        });
 }
 
 function errorNoTicket(errorMessage) {

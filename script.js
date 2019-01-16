@@ -4,18 +4,18 @@ https://developers.google.com/sheets/api/quickstart/js
 */
 
 // Client ID and API key from the Developer Console
-var CLIENT_ID = '456390951586-96qcaqi78249qdb4m89hac6ulu11ogbq.apps.googleusercontent.com';
-var API_KEY = 'AIzaSyD8jd0tPMYX6sR3-oLbnFXlKpA8tbQB96s';
+const CLIENT_ID = '456390951586-96qcaqi78249qdb4m89hac6ulu11ogbq.apps.googleusercontent.com';
+const API_KEY = 'AIzaSyD8jd0tPMYX6sR3-oLbnFXlKpA8tbQB96s';
 
 // Array of API discovery doc URLs for APIs used by the quickstart
-var DISCOVERY_DOCS = ["https://sheets.googleapis.com/$discovery/rest?version=v4"];
+const DISCOVERY_DOCS = ["https://sheets.googleapis.com/$discovery/rest?version=v4"];
 
 // Authorization scopes required by the API; multiple scopes can be
 // included, separated by spaces.
-var SCOPES = "https://www.googleapis.com/auth/spreadsheets";
+const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
 
-var authorizeButton = document.getElementById('sheets-login');
-//var signoutButton = document.getElementById('signout_button');
+let authorizeButton = document.getElementById('sheets-login');
+//let signoutButton = document.getElementById('signout_button');
 
 /**
  *  On load, called to load the auth2 library and API client library.
@@ -34,7 +34,7 @@ function initClient() {
 		clientId: CLIENT_ID,
 		discoveryDocs: DISCOVERY_DOCS,
 		scope: SCOPES
-	}).then(function() {
+	}).then(() => {
 		// Listen for sign-in state changes.
 		gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
 
@@ -42,7 +42,7 @@ function initClient() {
 		updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
 		authorizeButton.onclick = handleAuthClick;
 		//signoutButton.onclick = handleSignoutClick;
-	}, function(error) {
+	}, error => {
 		appendPre(JSON.stringify(error, null, 2));
 	});
 }
@@ -85,34 +85,9 @@ function handleSignoutClick(event) {
  * @param {string} message Text to be placed in pre element.
  */
 function appendPre(message) {
-	var pre = document.getElementById('content');
-	var textContent = document.createTextNode(message + '\n');
+	let pre = document.getElementById('content');
+	let textContent = document.createTextNode(`${message}\n`);
 	pre.appendChild(textContent);
-}
-
-/**
- * Print the names and majors of students in a sample spreadsheet:
- * https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
- */
-function listMajors() {
-	gapi.client.sheets.spreadsheets.values.get({
-		spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
-		range: 'Class Data!A2:E',
-	}).then(function(response) {
-		var range = response.result;
-		if (range.values.length > 0) {
-			appendPre('Name, Major:');
-			for (i = 0; i < range.values.length; i++) {
-				var row = range.values[i];
-				// Print columns A and E, which correspond to indices 0 and 4.
-				appendPre(row[0] + ', ' + row[4]);
-			}
-		} else {
-			appendPre('No data found.');
-		}
-	}, function(response) {
-		appendPre('Error: ' + response.result.error.message);
-	});
 }
 
 function hideAll() {
@@ -131,20 +106,20 @@ function showAfterLoad(id) {
 	$(id).show();
 }
 
-$("#sheet-setup").on('submit', function(event) {
+$("#sheet-setup").on('submit', event => {
 	event.preventDefault();
 	showLoading();
 
-	var sheetId = $('#sheet-link').val().split('/')[5];
-	var studentPrice = $('#student-price').val();
-	var gaPrice = $('#ga-price').val();
+	let sheetId = $('#sheet-link').val().split('/')[5];
+	let studentPrice = $('#student-price').val();
+    let gaPrice = $('#ga-price').val();
+    
+    let info = { sheetId, studentPrice, gaPrice };
 
-	checkIfSheetValid(sheetId).then(function(response) {
+	checkIfSheetValid(sheetId).then(response => {
 		// the sheet is a real google sheet!
-		showAfterLoad('#ticket-entry');
-
-		prepTicketEntry(sheetId, studentPrice, gaPrice);
-	}).catch(function(err) {
+		prepTicketEntry(info)
+	}).catch(err => {
 		Swal('Invalid Google Sheet!', '', 'error');
 		console.log(err);
 	});
@@ -156,70 +131,84 @@ function checkIfSheetValid(spreadsheetId) {
 	});
 }
 
-function prepTicketEntry(sheetId, studentPrice, gaPrice) {
+function prepTicketEntry(info) {
+    showAfterLoad('#ticket-entry');
+
+    // clear info of previous ticket sale
+    info.bannerId = null;
+
 	$('#ticket-entry').off('submit');
-	$('#ticket-entry').on('submit', function() {
+	$('#ticket-entry').on('submit', () => {
 		event.preventDefault();
 		showLoading();
 
-		var isStudentRadioSelected = $('#student-radio').val();
+		let isStudentRadioSelected = $('#student-radio').val();
 
 		if (isStudentRadioSelected) {
-			// if it's a student ticket, grab the banner id
-			var bannerId = $('#banner-id').val();
-
-			// make sure this student has not already purchased a ticket
-			checkBannerId(sheetId, bannerId).then(function() {
-				// banner id has not been used, so allow ticket sale
-				Swal({
-					title: 'Ask them for $' + studentPrice,
-					text: "If they don't have the money, click cancel.",
-					type: 'warning',
-					showCancelButton: true,
-					confirmButtonText: 'They have the money!'
-				}).then((result) => {
-					if (result.value) {
-						return logTicketSale(sheetId, bannerId);
-					}
-				}).then(function() {
-					showAfterLoad('#ticket-entry');
-				});
-			}).catch(function(err) {
-				errorNoTicket(err);
-				showAfterLoad('#ticket-entry');
-			});
-
+            sellStudentTicket(info);
 		} else {
-			writeGaToSpreadsheet(sheetId).then(function() {
+			writeGaToSpreadsheet(info.sheetId).then(() => {
 				Swal('GA ticket good!', 'woohoo', 'success');
-				showAfterLoad('#ticket-entry');
+				prepTicketEntry(info)
 			});
 		}
 	});
 }
 
-function checkBannerId(sheetId, bannerId) {
-	return readBannerIdRow(sheetId).catch(function(err) {
-		return Promise.reject(err.result.error.message);
-	}).then(function(previousBannerIds) {
-		if (previousBannerIds.includes(bannerId)) {
-			return Promise.reject('The banner ID has already been used.');
-		} else {
-			// it hasn't been used before
-			return true;
-		}
-	});
+function sellStudentTicket(info) {
+    // if it's a student ticket, grab the banner id
+    const bannerId = $('#banner-id').val();
+
+    // TODO: Validate banner id format
+    info.bannerId = bannerId;
+
+    // make sure this student has not already purchased a ticket
+    return checkBannerId(info.sheetId, info.bannerId)
+
+    // ran when banner id is verfied to not have been used before
+    .then(() => Swal({
+        title: `Ask them for $${info.studentPrice}`,
+        text: "If they don't have the money, click cancel.",
+        type: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'They have the money!'
+    }))
+    // value = true if the user confirms the above dialog
+    .then( ({value}) => (value ? logTicketSale(info) : false))
+    .catch(err => {
+        console.log(err);
+        
+        errorNoTicket(err);
+    })
+    .then(() => prepTicketEntry(info));
 }
 
-function logTicketSale(sheetId, bannerId) {
-	writeStudentToSpreadsheet(sheetId, bannerId).then(function() {
-		Swal('Give them their ticket!', 'yeet', 'success');
-		showAfterLoad('#ticket-entry');
-	}).catch(function(err) {
-		console.log(err);
-		errorNoTicket('Unable to log ticket sale.');
-		showAfterLoad('#ticket-entry');
-	});
+function checkBannerId(sheetId, enteredBannerId) {
+    return readBannerIdRow(sheetId).catch(err => console.log(err))
+        // grab the error message text from the api json
+        .catch(({result}) => Promise.reject(result.error.message)) 
+
+        // check if the entered banner id is in the array
+        .then(previousBannerIds => {
+            if (previousBannerIds.includes(enteredBannerId)) {
+                return Promise.reject('The banner ID has already been used.');
+            } else {
+                // it hasn't been used before
+                return true;
+            }
+	    });
+}
+
+function logTicketSale(info) {
+	writeStudentToSpreadsheet(info.sheetId, info.bannerId).then(() => {
+        Swal('Give them their ticket!', 'yeet', 'success');
+		prepTicketEntry(info);
+    }).catch(res => {
+        // grab the error message text from the api json
+        Promise.reject(res.result.error.message)
+
+        prepTicketEntry(info);
+    }) 
 }
 
 function errorNoTicket(errorMessage) {
@@ -252,8 +241,16 @@ function readBannerIdRow(spreadsheetId) {
 		range: 'Sheet1!D2:D',
 		resource: {
 			majorDimension: "COLUMNS"
-		}
-	}).then(function(res) {
-		return res.result.values[0];
-	});
+        }
+    })
+
+    // get an array of all banner ids from the response
+    .then(res => {
+        // handle empty spreadsheet because values won't exist
+        if (res.result.hasOwnProperty('values')) {
+            return res.result.values[0];
+        } else {
+            return [];
+        }
+    });
 }

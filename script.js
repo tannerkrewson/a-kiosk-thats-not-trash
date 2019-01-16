@@ -145,9 +145,8 @@ $("#sheet-setup").on('submit', function( event ) {
 
         prepTicketEntry(sheetId, studentPrice, gaPrice);
     }).catch(function(err) {
-        alert('Bad google sheet');
+        Swal.fire('Invalid Google Sheet!', '', 'error');
         console.log(err);
-        
     });
 });
 
@@ -173,17 +172,18 @@ function prepTicketEntry(sheetId, studentPrice, gaPrice) {
             checkBannerId(sheetId, bannerId);
 
             writeStudentToSpreadsheet(sheetId, bannerId).then(function () {
-                alert('student ticket bought!');
+                Swal.fire('Student ticket good!', 'woohoo', 'success');
                 showAfterLoad('#ticket-entry');
             }).catch(function (err) {
                 console.log(err);
                 
-                alert('banner id already used');
+                Swal.fire('Error!', 'Get Adam McMichael immediately', 'error');
+
                 showAfterLoad('#ticket-entry');
             });
         } else {
             writeGaToSpreadsheet(sheetId).then(function () {
-                alert('ga ticket bought!');
+                Swal.fire('GA ticket good!', 'woohoo', 'success');
                 showAfterLoad('#ticket-entry');
             });
         }

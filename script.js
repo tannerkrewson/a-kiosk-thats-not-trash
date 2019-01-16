@@ -268,7 +268,17 @@ function errorNoTicket(errorMessage) {
 }
 
 function appendPurchaseToSheet(info) {
-    const newRow = [(new Date()).toUTCString(), info.quantity, info.ticketType, info.bannerId || 'n/a'];
+    let now = new Date();
+    const weekday = now.toLocaleString('en-US', { weekday: 'short' });
+    const timestamp = weekday + ' ' + now.toLocaleString();
+
+    const newRow = [
+        timestamp,
+        info.quantity,
+        info.ticketType,
+        info.bannerId || 'n/a'
+    ];
+
 	return gapi.client.sheets.spreadsheets.values.append({
 		spreadsheetId: info.sheetId,
 		range: 'Sheet1',

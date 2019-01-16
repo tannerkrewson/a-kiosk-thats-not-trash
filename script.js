@@ -145,7 +145,7 @@ $("#sheet-setup").on('submit', function( event ) {
 
         prepTicketEntry(sheetId, studentPrice, gaPrice);
     }).catch(function(err) {
-        Swal.fire('Invalid Google Sheet!', '', 'error');
+        Swal('Invalid Google Sheet!', '', 'error');
         console.log(err);
     });
 });
@@ -169,21 +169,30 @@ function prepTicketEntry(sheetId, studentPrice, gaPrice) {
             var bannerId = $('#banner-id').val();
 
             // make sure this student has not already purchased a ticket
-            checkBannerId(sheetId, bannerId);
-
-            writeStudentToSpreadsheet(sheetId, bannerId).then(function () {
-                Swal.fire('Student ticket good!', 'woohoo', 'success');
-                showAfterLoad('#ticket-entry');
+            checkBannerId(sheetId, bannerId).then(function () {
+                // banner id has not been used, so allow ticket sale
+                Swal({
+                    title: 'Ask them for $' + studentPrice,
+                    text: "If they don't have the money, click cancel.",
+                    type: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'They have the money!'
+                  }).then((result) => {
+                    if (result.value) {
+                        return logTicketSale(sheetId, bannerId);
+                    }
+                  }).then(function () {
+                      showAfterLoad('#ticket-entry');
+                  });
             }).catch(function (err) {
                 console.log(err);
-                
-                Swal.fire('Error!', 'Get Adam McMichael immediately', 'error');
-
+                errorNoTicket('The banner ID has already been used to buy a ticket.');
                 showAfterLoad('#ticket-entry');
             });
+
         } else {
             writeGaToSpreadsheet(sheetId).then(function () {
-                Swal.fire('GA ticket good!', 'woohoo', 'success');
+                Swal('GA ticket good!', 'woohoo', 'success');
                 showAfterLoad('#ticket-entry');
             });
         }
@@ -191,7 +200,30 @@ function prepTicketEntry(sheetId, studentPrice, gaPrice) {
 }
 
 function checkBannerId(sheetId, bannerId) {
-    return true;
+    return readBannerIdRow(sheetId).then(function (previousBannerIds) {
+        if (previousBannerIds.includes(bannerId)) {
+            // the banner id has already been used
+            return Promise.reject();
+        } else {
+            // it hasn't been used before
+            return true;
+        }
+    });
+}
+
+function logTicketSale (sheetId, bannerId) {
+    writeStudentToSpreadsheet(sheetId, bannerId).then(function () {
+        Swal('Give them their ticket!', 'yeet', 'success');
+        showAfterLoad('#ticket-entry');
+    }).catch(function (err) {
+        console.log(err);
+        errorNoTicket('Unable to log ticket sale.');
+        showAfterLoad('#ticket-entry');
+    });
+}
+
+function errorNoTicket(errorMessage) {
+    Swal('Don\'t give them a ticket!', errorMessage, 'error');
 }
 
 function writeStudentToSpreadsheet(spreadsheetId, bannerId) {
@@ -213,3 +245,15 @@ function writeRowToSheet(row, spreadsheetId) {
         }
     });
 };
+
+function readBannerIdRow(spreadsheetId) {
+    return gapi.client.sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: 'Sheet1!D2:D',
+        resource: {
+            majorDimension: "COLUMNS"
+        }
+    }).then(function (res) {
+        return res.result.values[0];
+    });
+}

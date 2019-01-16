@@ -12,7 +12,7 @@ var DISCOVERY_DOCS = ["https://sheets.googleapis.com/$discovery/rest?version=v4"
 
 // Authorization scopes required by the API; multiple scopes can be
 // included, separated by spaces.
-var SCOPES = "https://www.googleapis.com/auth/spreadsheets.readonly";
+var SCOPES = "https://www.googleapis.com/auth/spreadsheets";
 
 var authorizeButton = document.getElementById('sheets-login');
 //var signoutButton = document.getElementById('signout_button');
@@ -67,6 +67,7 @@ function updateSigninStatus(isSignedIn) {
  *  Sign in the user upon button click.
  */
 function handleAuthClick(event) {
+  showLoading();
   gapi.auth2.getAuthInstance().signIn();
 }
 
@@ -174,7 +175,9 @@ function prepTicketEntry(sheetId, studentPrice, gaPrice) {
             writeStudentToSpreadsheet(sheetId, bannerId).then(function () {
                 alert('student ticket bought!');
                 showAfterLoad('#ticket-entry');
-            }).catch(function () {
+            }).catch(function (err) {
+                console.log(err);
+                
                 alert('banner id already used');
                 showAfterLoad('#ticket-entry');
             });
@@ -191,14 +194,22 @@ function checkBannerId(sheetId, bannerId) {
     return true;
 }
 
-function writeStudentToSpreadsheet(sheetId, bannerId) {
-    return new Promise(function (resolve, reject) {
-        resolve();
-    });
+function writeStudentToSpreadsheet(spreadsheetId, bannerId) {
+    return writeRowToSheet([(new Date()).toUTCString(), 1, 'Student', bannerId], spreadsheetId);
 }
 
 function writeGaToSpreadsheet(sheetId) {
-    return new Promise(function (resolve, reject) {
-        resolve();
-    });
+    return writeRowToSheet([(new Date()).toUTCString(), 1, 'GA'], spreadsheetId);
 }
+
+function writeRowToSheet(row, spreadsheetId) {
+    return gapi.client.sheets.spreadsheets.values.append({
+        spreadsheetId,
+        range: 'Sheet1',
+        valueInputOption: 'USER_ENTERED',
+        resource: {
+            majorDimension: "ROWS",
+            values: [ row ]
+        }
+    });
+};

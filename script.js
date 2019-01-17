@@ -29,9 +29,7 @@ function handleClientLoad() {
  *  listeners.
  */
 function initClient() {
-    console.log('init client');
-    
-	gapi.client.init({
+    gapi.client.init({
 		apiKey: API_KEY,
 		clientId: CLIENT_ID,
 		discoveryDocs: DISCOVERY_DOCS,
@@ -72,6 +70,7 @@ function handleSignoutClick(event) {
 
 // ran when google is logged in or out
 function updateSigninStatus(isSignedIn) {
+    hideAll();
 	if (isSignedIn) {
 		showAfterLoad('#sheet-setup');
 	} else {
@@ -106,12 +105,10 @@ $("#sheet-setup").on('submit', event => {
     let info = { sheetId, studentPrice, gaPrice };
 
 	checkIfSheetValid(sheetId).then(response => {
-        console.log(response);
-        
-		// the sheet is a real google sheet!
+		// the sheet is, in fact, a real google sheet!
 		prepTicketEntry(info)
 	}).catch(err => {
-        console.log(err);
+        console.error(err);
 		Swal('Invalid Google Sheet!', err.result.error.message, 'error');
         showAfterLoad('#sheet-setup');
 	});
@@ -141,7 +138,6 @@ function checkIfSheetValid(spreadsheetId) {
         if (previousTicketLogExists) return res;
 
         const isNewSpreadsheet = sheetList.length === 1 && sheetList[0].properties.title === 'Sheet1';
-        console.log(sheetList[0].properties);
         
         if (isNewSpreadsheet) return renameDefaultSheet(spreadsheetId, sheetList[0].properties.sheetId);
 
@@ -280,7 +276,7 @@ function confirmPayment(info) {
 }
 
 function checkBannerId(sheetId, enteredBannerId) {
-    return readBannerIdRow(sheetId).catch(err => console.log(err))
+    return readBannerIdRow(sheetId).catch(err => console.error(err))
         // grab the error message text from the api json
         .catch(({result}) => Promise.reject(result.error.message)) 
 

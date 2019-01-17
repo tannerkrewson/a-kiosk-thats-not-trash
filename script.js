@@ -132,7 +132,7 @@ $("#sheet-setup").on('submit', event => {
 TICKET_TYPE_RADIO_GROUP.on('change', () => {
     const selectedTicketType = getSelectedTicketType();
 
-    if (selectedTicketType === 'student') {
+    if (selectedTicketType === 'Student') {
         $('#student-options').show();
         $('#ga-options').hide();
     } else if (selectedTicketType === 'GA') {
@@ -218,7 +218,7 @@ function prepTicketEntry(info) {
         
         info.ticketType = getSelectedTicketType();
 
-		if (info.ticketType === 'student') {
+		if (info.ticketType === 'Student') {
             sellStudentTicket(info);
 		} else if (info.ticketType === 'GA') {
 			sellGATickets(info);
@@ -335,18 +335,23 @@ function appendPurchaseToSheet(info) {
     const weekday = now.toLocaleString('en-US', { weekday: 'short' });
     const timestamp = weekday + ' ' + now.toLocaleString();
 
+    const ticketPrice = info.ticketType === 'Student' ? info.studentPrice : info.gaPrice;
+    const totalCost = ticketPrice * info.quantity;
+
     const newRow = [
         timestamp,
-        info.quantity,
         info.ticketType,
-        info.bannerId || 'n/a'
+        info.bannerId || 'n/a',
+        info.quantity,
+        '$' + ticketPrice,
+        '$' + totalCost
     ];
 
 	return appendRow(info.sheetId, newRow);
 };
 
 function appendHeader(spreadsheetId) {
-    return appendRow(spreadsheetId, ['Timestamp', 'Quantity', 'Ticket Type', 'Banner ID']);
+    return appendRow(spreadsheetId, ['Timestamp', 'Type', 'Banner ID', 'Quantity', 'Ticket Price', 'Total']);
 }
 
 function appendRow(spreadsheetId, newRow) {
@@ -364,7 +369,7 @@ function appendRow(spreadsheetId, newRow) {
 function readBannerIdRow(spreadsheetId) {
 	return gapi.client.sheets.spreadsheets.values.get({
 		spreadsheetId,
-		range: SHEET_NAME + '!D2:D',
+		range: SHEET_NAME + '!C2:C',
 		resource: {
 			majorDimension: "COLUMNS"
         }

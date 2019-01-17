@@ -252,13 +252,14 @@ function sellGATickets(info) {
 }
 
 function confirmPayment(info) {
-    const totalPrice = info.quantity * info.studentPrice;
+    const ticketPrice = info.ticketType === 'Student' ? info.studentPrice : info.gaPrice;
+    const totalCost = ticketPrice * info.quantity;
     const plural = info.quantity !== 1 ? 's' : '';
 
     // TODO: if tickets are free, disable confirmation
 
     return Swal({
-        title: `Ask them for $${totalPrice}.`,
+        title: `Ask them for $${totalCost}.`,
         text: `They will receive ${info.quantity} ${info.ticketType} ticket${plural}. If they don't have the money, click cancel.`,
         type: 'warning',
         showCancelButton: true,

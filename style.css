@@ -31,3 +31,22 @@ footer {
 #ga-options {
     display: none;
 }
+
+#loading {
+    text-align: center;
+}
+
+.loading-img {
+    border-radius: 50%;
+    animation: rotation 2s infinite linear;
+    width: 72px;
+}
+
+@keyframes rotation {
+    from {
+            -webkit-transform: rotate(0deg);
+    }
+    to {
+            -webkit-transform: rotate(359deg);
+    }
+}

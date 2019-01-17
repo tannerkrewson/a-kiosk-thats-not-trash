@@ -72,8 +72,16 @@ function handleSignoutClick(event) {
 function updateSigninStatus(isSignedIn) {
     hideAll();
 	if (isSignedIn) {
-		showAfterLoad('#sheet-setup');
+        savedInfo = checkForSavedInfoFromCookies();
+        if (savedInfo) {
+            // if the cookies had data, make sure it's still good
+            validateInfo(savedInfo);
+        } else {
+            // there's no saved info, so the user must enter it
+            showAfterLoad('#sheet-setup');
+        }
 	} else {
+        // if the login failed, show the used the login screen again
 		showAfterLoad('#auth');
 	}
 }
@@ -106,22 +114,40 @@ $("#sheet-setup").on('submit', event => {
 	event.preventDefault();
 	showLoading();
 
-	let sheetId = $('#sheet-link').val().split('/')[5];
+    let sheetLink = $('#sheet-link').val();
+	let sheetId = sheetLink.split('/')[5];
 	let studentPrice = $('#student-price').val();
     let gaPrice = $('#ga-price').val();
     
-    let info = { sheetId, studentPrice, gaPrice };
+    let info = { sheetLink, sheetId, studentPrice, gaPrice };
 
-	checkIfSheetValid(sheetId).then(response => {
-		// the sheet is, in fact, a real google sheet!
+    // if the info is good, this will show ticket entry ui
+    validateInfo(info);
+});
+
+function checkForSavedInfoFromCookies() {
+    let savedInfo = Cookies.getJSON('info');
+    if (!savedInfo) return false;
+    
+    $('#sheet-link').val(savedInfo.sheetLink);
+	$('#student-price').val(savedInfo.studentPrice);
+    $('#ga-price').val(savedInfo.gaPrice);
+
+    return savedInfo;
+}
+
+function validateInfo(info) {
+    checkIfSheetValid(info.sheetId).then(response => {
+        // these run if the sheet is, in fact, a real google sheet
+        Cookies.set('info', info);
 		prepTicketEntry(info)
 	}).catch(err => {
         console.error(err);
 		Swal('Invalid Google Sheet!', err.result.error.message, 'error');
         showAfterLoad('#sheet-setup');
 	});
-});
-
+}
+ 
 TICKET_TYPE_RADIO_GROUP.on('change', () => {
     const selectedTicketType = getSelectedTicketType();
 

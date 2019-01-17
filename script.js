@@ -78,11 +78,11 @@ function updateSigninStatus(isSignedIn) {
             validateInfo(savedInfo);
         } else {
             // there's no saved info, so the user must enter it
-            showAfterLoad('#sheet-setup');
+            showScreen('#sheet-setup');
         }
 	} else {
         // if the login failed, show the used the login screen again
-		showAfterLoad('#auth');
+		showScreen('#auth');
 	}
 }
 
@@ -90,6 +90,7 @@ function hideAll() {
 	$('#auth').hide();
 	$('#sheet-setup').hide();
     $('#ticket-entry').hide();
+    $('#loading').hide();
 }
 
 function resetTicketEntry() {
@@ -105,9 +106,9 @@ function showLoading() {
 	$('#loading').show();
 }
 
-function showAfterLoad(id) {
-	$('#loading').hide();
-	$(id).show();
+function showScreen(id) {
+	hideAll();
+    $(id).show();
 }
 
 $("#sheet-setup").on('submit', event => {
@@ -144,7 +145,7 @@ function validateInfo(info) {
 	}).catch(err => {
         console.error(err);
 		Swal('Invalid Google Sheet!', err.result.error.message, 'error');
-        showAfterLoad('#sheet-setup');
+        showScreen('#sheet-setup');
 	});
 }
  
@@ -164,6 +165,8 @@ TICKET_TYPE_RADIO_GROUP.on('change', () => {
     }
     
 });
+
+$('#settings').on('click', () => showScreen('#sheet-setup'));
 
 function checkIfSheetValid(spreadsheetId) {
     // also makes sure the SHEET_NAME tab is created
@@ -226,7 +229,7 @@ function spreadsheetBatchUpdate(spreadsheetId, requests) {
 }
 
 function prepTicketEntry(info) {
-    showAfterLoad('#ticket-entry');
+    showScreen('#ticket-entry');
     resetTicketEntry();
 
     // sometimes the form submit button tries to take focus,

@@ -128,9 +128,13 @@ TICKET_TYPE_RADIO_GROUP.on('change', () => {
     if (selectedTicketType === 'Student') {
         $('#student-options').show();
         $('#ga-options').hide();
+
+        $('#banner-id').focus();
     } else if (selectedTicketType === 'GA') {
         $('#student-options').hide();
         $('#ga-options').show();
+
+        $('#quantity').focus();
     }
     
 });
@@ -196,8 +200,12 @@ function spreadsheetBatchUpdate(spreadsheetId, requests) {
 }
 
 function prepTicketEntry(info) {
-    resetTicketEntry();
     showAfterLoad('#ticket-entry');
+    resetTicketEntry();
+
+    // sometimes the form submit button tries to take focus,
+    // so grab it again for good measure after .5 seconds
+    setTimeout(() => $('#banner-id').focus(), 500);
 
     // clear info of previous ticket sale
     info.bannerId = null;

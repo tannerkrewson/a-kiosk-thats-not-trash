@@ -81,7 +81,15 @@ function updateSigninStatus(isSignedIn) {
 function hideAll() {
 	$('#auth').hide();
 	$('#sheet-setup').hide();
-	$('#ticket-entry').hide();
+    $('#ticket-entry').hide();
+}
+
+function resetTicketEntry() {
+    $('#banner-id').val('');
+    $('#quantity').val('');
+
+    // .change ensures the events attached to checking the box fire
+    $("#student-radio").prop("checked", true).change();
 }
 
 function showLoading() {
@@ -188,6 +196,7 @@ function spreadsheetBatchUpdate(spreadsheetId, requests) {
 }
 
 function prepTicketEntry(info) {
+    resetTicketEntry();
     showAfterLoad('#ticket-entry');
 
     // clear info of previous ticket sale

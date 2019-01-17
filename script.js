@@ -45,20 +45,8 @@ function initClient() {
 		authorizeButton.onclick = handleAuthClick;
 		//signoutButton.onclick = handleSignoutClick;
 	}, error => {
-        appendPre(JSON.stringify(error, null, 2));
+        Swal('Try refreshing the page', JSON.stringify(error, null, 2), 'error');
 	});
-}
-
-/**
- * Append a pre element to the body containing the given message
- * as its text node. Used to display the results of the API call.
- *
- * @param {string} message Text to be placed in pre element.
- */
-function appendPre(message) {
-	let pre = document.getElementById('content');
-	let textContent = document.createTextNode(`${message}\n`);
-	pre.appendChild(textContent);
 }
 
 

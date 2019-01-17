@@ -29,6 +29,8 @@ function handleClientLoad() {
  *  listeners.
  */
 function initClient() {
+    console.log('init client');
+    
 	gapi.client.init({
 		apiKey: API_KEY,
 		clientId: CLIENT_ID,
@@ -43,7 +45,7 @@ function initClient() {
 		authorizeButton.onclick = handleAuthClick;
 		//signoutButton.onclick = handleSignoutClick;
 	}, error => {
-		appendPre(JSON.stringify(error, null, 2));
+        appendPre(JSON.stringify(error, null, 2));
 	});
 }
 
@@ -64,6 +66,8 @@ function appendPre(message) {
 CUSTOM CODE
 */
 
+const SHEET_NAME = 'Ticket Sales';
+
 const TICKET_TYPE_RADIO_GROUP = $('input[type=radio][name=ticket-type]');
 
 // ran when sign in the user upon button click.
@@ -74,6 +78,7 @@ function handleAuthClick(event) {
 
 // ran when signout button is clicked (there isn't one right now)
 function handleSignoutClick(event) {
+    showLoading();
 	gapi.auth2.getAuthInstance().signOut();
 }
 
@@ -113,11 +118,14 @@ $("#sheet-setup").on('submit', event => {
     let info = { sheetId, studentPrice, gaPrice };
 
 	checkIfSheetValid(sheetId).then(response => {
+        console.log(response);
+        
 		// the sheet is a real google sheet!
 		prepTicketEntry(info)
 	}).catch(err => {
-		Swal('Invalid Google Sheet!', '', 'error');
-		console.log(err);
+        console.log(err);
+		Swal('Invalid Google Sheet!', err.result.error.message, 'error');
+        showAfterLoad('#sheet-setup');
 	});
 });
 
@@ -135,8 +143,63 @@ TICKET_TYPE_RADIO_GROUP.on('change', () => {
 });
 
 function checkIfSheetValid(spreadsheetId) {
+    // also makes sure the SHEET_NAME tab is created
 	return gapi.client.sheets.spreadsheets.get({
 		spreadsheetId
+	}).then((res) => {
+        let sheetList = res.result.sheets;
+
+        const previousTicketLogExists = checkIfPreviousTicketLogExists(sheetList);
+        if (previousTicketLogExists) return res;
+
+        const isNewSpreadsheet = sheetList.length === 1 && sheetList[0].properties.title === 'Sheet1';
+        console.log(sheetList[0].properties);
+        
+        if (isNewSpreadsheet) return renameDefaultSheet(spreadsheetId, sheetList[0].properties.sheetId);
+
+        return createTicketLogSheet(spreadsheetId);
+    });
+}
+
+function checkIfPreviousTicketLogExists (sheetList) {
+    for (let sheet of sheetList) {
+        if (sheet.properties.title === SHEET_NAME) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function renameDefaultSheet(spreadsheetId, defaultSheetId) {
+    return spreadsheetBatchUpdate(spreadsheetId, [
+        {
+            updateSheetProperties: {
+                properties: {
+                    sheetId: defaultSheetId,
+                    title: SHEET_NAME,
+                },
+                fields: "title",
+            }
+        }
+    ]).then(() => appendHeader(spreadsheetId));
+}
+
+function createTicketLogSheet(spreadsheetId) {
+    return spreadsheetBatchUpdate(spreadsheetId, [
+        {
+            addSheet: {
+                properties:{
+                    title: SHEET_NAME
+                }
+            } 
+        }
+    ]).then(() => appendHeader(spreadsheetId));
+}
+
+function spreadsheetBatchUpdate(spreadsheetId, requests) {
+    return gapi.client.sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        resource: { requests }
 	});
 }
 
@@ -279,21 +342,29 @@ function appendPurchaseToSheet(info) {
         info.bannerId || 'n/a'
     ];
 
-	return gapi.client.sheets.spreadsheets.values.append({
-		spreadsheetId: info.sheetId,
-		range: 'Sheet1',
+	return appendRow(info.sheetId, newRow);
+};
+
+function appendHeader(spreadsheetId) {
+    return appendRow(spreadsheetId, ['Timestamp', 'Quantity', 'Ticket Type', 'Banner ID']);
+}
+
+function appendRow(spreadsheetId, newRow) {
+    return gapi.client.sheets.spreadsheets.values.append({
+		spreadsheetId,
+		range: SHEET_NAME,
 		valueInputOption: 'USER_ENTERED',
 		resource: {
 			majorDimension: "ROWS",
 			values: [newRow]
 		}
 	});
-};
+}
 
 function readBannerIdRow(spreadsheetId) {
 	return gapi.client.sheets.spreadsheets.values.get({
 		spreadsheetId,
-		range: 'Sheet1!D2:D',
+		range: SHEET_NAME + '!D2:D',
 		resource: {
 			majorDimension: "COLUMNS"
         }

@@ -220,7 +220,7 @@ function sellStudentTicket(info) {
     const bannerId = $('#banner-id').val();
 
     // TODO: Validate banner id format
-    info.bannerId = bannerId;
+    info.bannerId = bannerId.replace(/^0+/, ''); // remove leading zeros
     info.quantity = 1;
 
     // make sure this student has not already purchased a ticket

@@ -176,6 +176,19 @@ TICKET_TYPE_RADIO_GROUP.on('change', () => {
     
 });
 
+TICKETS_TO_OFFER_CHECK_GROUP.on('change', () => {
+    const selectedTicketTypes = getSelectedTicketsToOffer();
+
+    for (const ticketType of ALL_TICKET_TYPES) {
+        const selector = `#${ticketType.toLowerCase()}-options`;
+        if (selectedTicketTypes.includes(ticketType)) {
+            $(selector).show();
+        } else {
+            $(selector).hide();
+        }
+    }    
+});
+
 $('#settings').on('click', () => showScreen('#sheet-setup'));
 
 function checkIfSheetValid(spreadsheetId) {
@@ -266,7 +279,8 @@ function prepTicketEntry(info) {
 		} else if (info.ticketType === 'GA') {
 			sellGATickets(info);
 		} else {
-            Swal('Bad ticket type selected: ' + info.ticketType);
+            Swal('Bad ticket type selected: ' + info.ticketType)
+                .then(() => prepTicketEntry(info));
         }
 	});
 }

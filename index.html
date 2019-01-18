@@ -64,7 +64,7 @@
 						</label>
 					</div>
 				</div>
-				<div class="form-group">
+				<div id="student-options" class="form-group">
 					<label for="student-price">Student Ticket Price:</label>
 					<div class="input-group mb-3">
 						<div class="input-group-prepend">
@@ -73,7 +73,18 @@
 						<input type="number" class="form-control" id="student-price">
 					</div>
 				</div>
-				<div class="form-group">
+				<div id="guest-options" class="form-group">
+					<label for="guest-price">Student Guest Ticket Price:</label>
+					<div class="input-group mb-3">
+						<div class="input-group-prepend">
+							<span class="input-group-text">$</span>
+						</div>
+						<input type="number" class="form-control" id="guest-price">
+					</div>
+					<label for="guest-max">Max guest tickets allowed per banner ID:</label>
+					<input type="number" class="form-control" id="guest-max" maxlength="2">
+				</div>
+				<div id="ga-options" class="form-group">
 					<label for="ga-price">GA Ticket Price:</label>
 					<div class="input-group mb-3">
 						<div class="input-group-prepend">
@@ -121,7 +132,6 @@
 					<small id="guest-ticket-info" class="form-text text-muted">
 						A student can buy up to X guest tickets.
 					</small>
-				</div>
 				</div>
 				<div class="center-button">
 					<button type="button" class="btn btn-secondary" id="settings">Change Settings</button>

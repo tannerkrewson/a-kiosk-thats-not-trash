@@ -275,16 +275,34 @@ function prepTicketEntry(info) {
         info.quantity = $('#quantity-input').val();
         info.ticketType = getSelectedTicketType();
 
-		if (info.ticketType === 'Student') {
-            sellStudentTicket(info);
-		} else if (info.ticketType === 'Guest') {
-            sellGuestTickets(info);
-        } else if (info.ticketType === 'GA') {
-			sellGATickets(info);
-		} else {
-            Swal('Bad ticket type selected: ' + info.ticketType)
-                .then(() => prepTicketEntry(info));
+        let ticketSalePromise;
+        switch (info.ticketType) {
+            case 'Student':
+                ticketSalePromise = sellStudentTicket(info);
+                break;
+            case 'Guest':
+                ticketSalePromise = sellGuestTickets(info);
+                break;
+            case 'GA':
+                ticketSalePromise = sellGATickets(info);
+                break;
+            default:
+                return Swal('Bad ticket type selected: ' + info.ticketType)
+                    .then(() => prepTicketEntry(info));
         }
+
+        //these will happen after every type of ticket sale
+        return ticketSalePromise       
+            // tell the user how much money to take from customer,
+            // and log the ticket sale to the spreadsheet
+            .then(() => confirmPayment(info))
+
+            // show error before resetting
+            .catch(err => errorNoTicket(err))
+
+            // ran after payment is either confirmed or denied
+            .then(() => prepTicketEntry(info));
+        
 	});
 }
 
@@ -296,42 +314,18 @@ function sellStudentTicket(info) {
     return verifyAndNormalizeBannerId(info)
 
         // make sure this student has not already purchased a ticket
-        .then(() => checkBannerId(info.sheetId, info.bannerId))
-
-        // tell the user how much money to take from customer,
-        // and log the ticket sale to the spreadsheet
-        .then(() => confirmPayment(info))
-
-        // show error before resetting
-        .catch(err => errorNoTicket(err))
-
-        // ran after payment is either confirmed or denied
-        .then(() => prepTicketEntry(info));
+        .then(() => ensureBannerIdIsUnused(info))
 }
 
 function sellGuestTickets(info) {
     return verifyAndNormalizeBannerId(info)
-        .then(() => ensureIdIsAllowedMoreTickets(info))
 
-        // tell the user how much money to take from customer,
-        // and log the ticket sale to the spreadsheet
-        .then(() => confirmPayment(info))
-
-        // show error before resetting
-        .catch(err => errorNoTicket(err))
-
-        // ran after payment is either confirmed or denied
-        .then(() => prepTicketEntry(info));
+        .then(() => ensureIdIsAllowedMoreTickets(info));
 }
 
 function sellGATickets(info) {
-    return confirmPayment(info)
-
-        // show error before resetting
-        .catch(err => errorNoTicket(err))
-
-        // ran after payment is either confirmed or denied
-        .then(() => prepTicketEntry(info));
+    // ga tickets don't require any extra checks!
+    return Promise.resolve();
 }
 
 function confirmPayment(info) {
@@ -378,14 +372,22 @@ function getTicketPrice(info) {
     return info.gaPrice;
 }
 
-function checkBannerId(sheetId, enteredBannerId) {
-    return getAllBannerIds(sheetId).catch(err => console.error(err))
-        // grab the error message text from the api json
-        .catch(({result}) => Promise.reject(result.error.message)) 
+function verifyAndNormalizeBannerId(info) {
+    if (info.bannerId.length !== 9) {
+        return Promise.reject('The banner ID must be 9 digits long.');
+    }
 
-        // check if the entered banner id is in the array
-        .then(previousBannerIds => {
-            if (previousBannerIds.includes(enteredBannerId)) {
+    info.bannerId = info.bannerId.replace(/^0+/, ''); // remove leading zeros
+    return Promise.resolve();
+}
+
+function ensureBannerIdIsUnused(info) {
+    return getAllPurchases(info.sheetId)
+        .then(allPurchases => {
+            let numberOfStudentsTicketsBoughtWithThisBannerId
+                = countBoughtTickets(allPurchases, 'Student', info.bannerId);
+
+            if (numberOfStudentsTicketsBoughtWithThisBannerId > 0) {
                 return Promise.reject('The banner ID has already been used.');
             } else {
                 // it hasn't been used before
@@ -394,51 +396,29 @@ function checkBannerId(sheetId, enteredBannerId) {
 	    });
 }
 
-function verifyAndNormalizeBannerId(info) {
-    if (info.bannerId.length !== 9) {
-        return Promise.reject('The banner ID is not 9 digits long.');
-    }
-
-    info.bannerId = info.bannerId.replace(/^0+/, ''); // remove leading zeros
-    return Promise.resolve();
-}
-
 function ensureIdIsAllowedMoreTickets(info) {
-    return getAllPurchases(info.sheetId).then((allPurchases) => {
-        console.log(info);
-        console.log(allPurchases);
+    return getAllPurchases(info.sheetId)
+        .then(allPurchases => {
+            let numberOfGuestTicketsThisPersonHasAlreadyPurchased
+                = countBoughtTickets(allPurchases, 'Guest', info.bannerId);
 
-        let numberOfGuestTicketsThisPersonHasAlreadyPurchased = 0;
+            let numberOfAllowedGuestTicketsRemainingForThisPerson 
+                = parseInt(info.guestMax) - numberOfGuestTicketsThisPersonHasAlreadyPurchased;
 
-        for (let i = 0; i < allPurchases[0].length; i++) {
-            const ticketType = allPurchases[0][i];
-            const bannerId = allPurchases[1][i];
-            const quantity = parseInt(allPurchases[2][i]);
-
-            // if the purchase was made by the same person trying to
-            // purchase more guest tickets now
-            if (ticketType === 'Guest' && info.bannerId === bannerId) {
-                numberOfGuestTicketsThisPersonHasAlreadyPurchased += quantity;
+            // if the number of tickets they are trying to buy is greater than
+            // the number of tickets they are still allowed to buy, don't let em
+            if (parseInt(info.quantity) > numberOfAllowedGuestTicketsRemainingForThisPerson) {
+                return Promise.reject(
+                    'This person has already bought '
+                    + numberOfGuestTicketsThisPersonHasAlreadyPurchased
+                    + ' guest tickets.<br>Each student is only allowed '
+                    + info.guestMax
+                    + ' guest tickets.');
             }
-        }
 
-        let numberOfAllowedGuestTicketsRemainingForThisPerson 
-            = parseInt(info.guestMax) - numberOfGuestTicketsThisPersonHasAlreadyPurchased;
-
-        // if the number of tickets they are trying to buy is greater than
-        // the number of tickets they are still allowed to buy, don't let em
-        if (parseInt(info.quantity) > numberOfAllowedGuestTicketsRemainingForThisPerson) {
-            return Promise.reject(
-                'This person has already bought '
-                + numberOfGuestTicketsThisPersonHasAlreadyPurchased
-                + ' guest tickets.<br>Each student is only allowed '
-                + info.guestMax
-                + ' guest tickets.');
-        }
-
-        return Promise.resolve();
-        
-    });
+            return Promise.resolve();
+            
+        });
 }
 
 function logTicketSale(info) {
@@ -464,7 +444,7 @@ function logTicketSale(info) {
 function errorNoTicket(errorMessage) {
     console.error(errorMessage);
     
-	Swal('Don\'t give them a ticket!', errorMessage, 'error');
+	return Swal('Don\'t give them a ticket!', errorMessage, 'error');
 }
 
 function appendPurchaseToSheet(info) {
@@ -503,15 +483,38 @@ function appendRow(spreadsheetId, newRow) {
 	});
 }
 
-// gets a lit of all banner ids that have been used to make a ticket purchase
-function getAllBannerIds(spreadsheetId) {
-    return readRangeFromSheet(spreadsheetId, 'C2:C')
-        // strip the container array
-        .then((res) => res[0]);
+// counts the number of tickets of the given type, by
+// the given banner id
+function countBoughtTickets(allPurchases, ticketType, bannerId) {
+    let count = 0;
+
+    for (let i = 0; i < allPurchases.length; i++) {
+        const thisTicket = allPurchases[i];
+
+        const thisTicketType = thisTicket[0];
+        const thisTicketBannerId = thisTicket[1];
+        const thisTicketQuantity = thisTicket[2];
+
+        const isSameTicketType = thisTicketType === ticketType;
+        const isSameBannerId = thisTicketBannerId === bannerId;
+
+        if (isSameTicketType && isSameBannerId) {
+            count += parseInt(thisTicketQuantity);
+        }
+    }
+
+    return count;
+}
+
+// gets a list of all banner ids that have been used to make a ticket purchase
+function getAllStudentBannerIds(spreadsheetId) {
+
 }
 
 function getAllPurchases(spreadsheetId) {
-	return readRangeFromSheet(spreadsheetId, 'B2:D');
+    return readRangeFromSheet(spreadsheetId, 'B2:D')
+        // grab the error message text from the api json
+        .catch(({result}) => Promise.reject(result.error.message));
 }
 
 function readRangeFromSheet(spreadsheetId, rangeToRead) {
@@ -519,7 +522,7 @@ function readRangeFromSheet(spreadsheetId, rangeToRead) {
 		spreadsheetId,
 		range: SHEET_NAME + '!' + rangeToRead,
 		resource: {
-			majorDimension: "COLUMNS"
+			majorDimension: "ROWS"
         }
     })
         // get an array of all banner ids from the response

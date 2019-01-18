@@ -97,7 +97,7 @@
 						</label>
 					</div>
 					<div class="form-check">
-						<input class="form-check-input" type="radio" name="ticket-type" id="guest-radio" value="Student Guest">
+						<input class="form-check-input" type="radio" name="ticket-type" id="guest-radio" value="Guest">
 						<label class="form-check-label" for="guest-radio">
 							Student Guest
 						</label>
@@ -110,18 +110,18 @@
 					</div>
 				</div>
 				<br>
-				<div id="student-options">
-					<div class="form-group">
-						<label for="banner-id">Banner ID:</label>
-						<input type="text" class="form-control" id="banner-id" maxlength="9" placeholder="If this box has blue edges, scan the card!">
-						<small id="emailHelp" class="form-text text-muted">Do not manually enter the banner ID number. The student must have their card present to buy a ticket.</small>
-					</div>
+				<div id="banner-id" class="form-group">
+					<label for="banner-id">Banner ID:</label>
+					<input type="text" class="form-control" id="banner-id-input" maxlength="9" placeholder="If this box has blue edges, scan the card!">
+					<small class="form-text text-muted">Do not manually enter the banner ID number. The student must have their card present to buy a ticket.</small>
 				</div>
-				<div id="ga-options">
-					<div class="form-group">
-						<label for="banner-id">Quantity:</label>
-						<input type="number" class="form-control" id="quantity" maxlength="2">
-					</div>
+				<div id="quantity" class="form-group">
+					<label for="banner-id">Quantity:</label>
+					<input type="number" class="form-control" id="quantity-input" maxlength="2">
+					<small id="guest-ticket-info" class="form-text text-muted">
+						A student can buy up to X guest tickets.
+					</small>
+				</div>
 				</div>
 				<div class="center-button">
 					<button type="button" class="btn btn-secondary" id="settings">Change Settings</button>

@@ -96,8 +96,8 @@ function hideAll() {
 }
 
 function resetTicketEntry() {
-    $('#banner-id').val('');
-    $('#quantity').val('');
+    $('#banner-id-input').val('');
+    $('#quantity-input').val('');
 }
 
 function showLoading() {
@@ -155,15 +155,23 @@ TICKET_TYPE_RADIO_GROUP.on('change', () => {
     const selectedTicketType = getSelectedTicketType();
 
     if (selectedTicketType === 'Student') {
-        $('#student-options').show();
-        $('#ga-options').hide();
+        $('#banner-id').show();
+        $('#quantity').hide();
+        $('#guest-ticket-info').hide();
 
-        $('#banner-id').focus();
+        $('#banner-id-input').focus();
+    } else if (selectedTicketType === 'Guest') {
+        $('#banner-id').show();
+        $('#quantity').show();
+        $('#guest-ticket-info').show();
+
+        $('#banner-id-input').focus();
     } else if (selectedTicketType === 'GA') {
-        $('#student-options').hide();
-        $('#ga-options').show();
+        $('#banner-id').hide();
+        $('#quantity').show();
+        $('#guest-ticket-info').hide();
 
-        $('#quantity').focus();
+        $('#quantity-input').focus();
     }
     
 });
@@ -233,13 +241,13 @@ function spreadsheetBatchUpdate(spreadsheetId, requests) {
 function prepTicketEntry(info) {
     showScreen('#ticket-entry');
     resetTicketEntry();
-    
+
     showTicketTypes(info.ticketTypesToOffer);
     checkSelectedTicketTypes(info.ticketTypesToOffer);
 
     // sometimes the form submit button tries to take focus,
     // so grab it again for good measure after .5 seconds
-    setTimeout(() => $('#banner-id').focus(), 500);
+    setTimeout(() => $('#banner-id-input').focus(), 500);
 
     // clear info of previous ticket sale
     info.bannerId = null;
@@ -264,7 +272,7 @@ function prepTicketEntry(info) {
 }
 
 function sellStudentTicket(info) {
-    const bannerId = $('#banner-id').val();
+    const bannerId = $('#banner-id-input').val();
 
     // TODO: Validate banner id format
     info.bannerId = bannerId.replace(/^0+/, ''); // remove leading zeros
@@ -284,7 +292,7 @@ function sellStudentTicket(info) {
 }
 
 function sellGATickets(info) {
-    const quantity = $('#quantity').val();
+    const quantity = $('#quantity-input').val();
 
     //TODO: Verify quanity
     info.quantity = quantity;

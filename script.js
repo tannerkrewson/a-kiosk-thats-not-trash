@@ -55,6 +55,8 @@ CUSTOM CODE
 const SHEET_NAME = 'Ticket Sales';
 
 const TICKET_TYPE_RADIO_GROUP = $('input[type=radio][name=ticket-type]');
+const TICKETS_TO_OFFER_CHECK_GROUP = $('input[type=checkbox][name=tickets-to-offer]');
+const ALL_TICKET_TYPES = ['Student', 'Guest', 'GA'];
 
 // ran when sign in the user upon button click.
 function handleAuthClick(event) {
@@ -96,9 +98,6 @@ function hideAll() {
 function resetTicketEntry() {
     $('#banner-id').val('');
     $('#quantity').val('');
-
-    // .change ensures the events attached to checking the box fire
-    $("#student-radio").prop("checked", true).change();
 }
 
 function showLoading() {
@@ -116,11 +115,14 @@ $("#sheet-setup").on('submit', event => {
 	showLoading();
 
     let sheetLink = $('#sheet-link').val();
-	let sheetId = sheetLink.split('/')[5];
+    let sheetId = sheetLink.split('/')[5];
+    
+    let ticketTypesToOffer = getSelectedTicketsToOffer();
+
 	let studentPrice = $('#student-price').val();
     let gaPrice = $('#ga-price').val();
     
-    let info = { sheetLink, sheetId, studentPrice, gaPrice };
+    let info = { sheetLink, sheetId, studentPrice, gaPrice, ticketTypesToOffer };
 
     // if the info is good, this will show ticket entry ui
     validateInfo(info);
@@ -231,6 +233,9 @@ function spreadsheetBatchUpdate(spreadsheetId, requests) {
 function prepTicketEntry(info) {
     showScreen('#ticket-entry');
     resetTicketEntry();
+    
+    showTicketTypes(info.ticketTypesToOffer);
+    checkSelectedTicketTypes(info.ticketTypesToOffer);
 
     // sometimes the form submit button tries to take focus,
     // so grab it again for good measure after .5 seconds
@@ -417,6 +422,49 @@ function readBannerIdRow(spreadsheetId) {
     });
 }
 
+function getSelectedTicketsToOffer() {
+    let checkedBoxes = TICKETS_TO_OFFER_CHECK_GROUP.filter(':checked');
+    let result = [];
+
+    // strip all the jquery junk
+    // result will just be an array of the ticket types as strings
+    for (let box of checkedBoxes) {
+        result.push(box.defaultValue);
+    }
+    return result;
+}
+
 function getSelectedTicketType() {
     return TICKET_TYPE_RADIO_GROUP.filter(':checked')[0].value;
+}
+
+function showTicketTypes(ticketTypesToShow) {
+    let first = false;
+    for (const ticketType of ALL_TICKET_TYPES) {
+        const selector = `#${ticketType.toLowerCase()}-radio`;
+        if (ticketTypesToShow.includes(ticketType)) {
+            $(selector).parent().show();
+
+            // make sure that the first visible ticket type is selected by default
+            if (!first) {
+                // .change ensures the events attached to checking the box fire
+                $(selector).prop("checked", true).change();
+                first = true;
+            }
+        } else {
+            $(selector).parent().hide();
+        }
+    }
+}
+
+function checkSelectedTicketTypes(ticketTypesToCheck) {
+    let first = false;
+    for (const ticketType of ALL_TICKET_TYPES) {
+        const selector = `#${ticketType.toLowerCase()}-check`;
+        if (ticketTypesToCheck.includes(ticketType)) {
+            $(selector).prop("checked", true).change();
+        } else {
+            $(selector).prop("checked", false).change();
+        }
+    }
 }

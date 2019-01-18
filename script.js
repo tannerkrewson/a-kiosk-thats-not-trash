@@ -119,10 +119,13 @@ $("#sheet-setup").on('submit', event => {
     
     let ticketTypesToOffer = getSelectedTicketsToOffer();
 
-	let studentPrice = $('#student-price').val();
+    let studentPrice = $('#student-price').val();
+    let guestPrice = $('#guest-price').val();
     let gaPrice = $('#ga-price').val();
+
+    let guestMax = $('#guest-max').val();
     
-    let info = { sheetLink, sheetId, studentPrice, gaPrice, ticketTypesToOffer };
+    let info = { sheetLink, sheetId, studentPrice, guestPrice, gaPrice, ticketTypesToOffer, guestMax };
 
     // if the info is good, this will show ticket entry ui
     validateInfo(info);
@@ -261,22 +264,22 @@ function prepTicketEntry(info) {
     // sometimes the form submit button tries to take focus,
     // so grab it again for good measure after .5 seconds
     setTimeout(() => $('#banner-id-input').focus(), 500);
-
-    // clear info of previous ticket sale
-    info.bannerId = null;
-    info.quantity = null;
-    info.ticketType = null;
-
+    
 	$('#ticket-entry').off('submit');
 	$('#ticket-entry').on('submit', () => {
 		event.preventDefault();
-		showLoading();
+        showLoading();
         
+        // get new info from inputs
+        info.bannerId = $('#banner-id-input').val();
+        info.quantity = $('#quantity-input').val();
         info.ticketType = getSelectedTicketType();
 
 		if (info.ticketType === 'Student') {
             sellStudentTicket(info);
-		} else if (info.ticketType === 'GA') {
+		} else if (info.ticketType === 'Guest') {
+            sellGuestTickets(info);
+        } else if (info.ticketType === 'GA') {
 			sellGATickets(info);
 		} else {
             Swal('Bad ticket type selected: ' + info.ticketType)
@@ -286,16 +289,32 @@ function prepTicketEntry(info) {
 }
 
 function sellStudentTicket(info) {
-    const bannerId = $('#banner-id-input').val();
-
-    // TODO: Validate banner id format
-    info.bannerId = bannerId.replace(/^0+/, ''); // remove leading zeros
+    
+    // student can only buy themself one ticket
     info.quantity = 1;
 
-    // make sure this student has not already purchased a ticket
-    return checkBannerId(info.sheetId, info.bannerId)
+    return verifyAndNormalizeBannerId(info)
 
-        // ran when banner id is verfied to not have been used before
+        // make sure this student has not already purchased a ticket
+        .then(() => checkBannerId(info.sheetId, info.bannerId))
+
+        // tell the user how much money to take from customer,
+        // and log the ticket sale to the spreadsheet
+        .then(() => confirmPayment(info))
+
+        // show error before resetting
+        .catch(err => errorNoTicket(err))
+
+        // ran after payment is either confirmed or denied
+        .then(() => prepTicketEntry(info));
+}
+
+function sellGuestTickets(info) {
+    return verifyAndNormalizeBannerId(info)
+        .then(() => ensureIdIsAllowedMoreTickets(info))
+
+        // tell the user how much money to take from customer,
+        // and log the ticket sale to the spreadsheet
         .then(() => confirmPayment(info))
 
         // show error before resetting
@@ -306,11 +325,6 @@ function sellStudentTicket(info) {
 }
 
 function sellGATickets(info) {
-    const quantity = $('#quantity-input').val();
-
-    //TODO: Verify quanity
-    info.quantity = quantity;
-
     return confirmPayment(info)
 
         // show error before resetting
@@ -321,15 +335,19 @@ function sellGATickets(info) {
 }
 
 function confirmPayment(info) {
-    const ticketPrice = info.ticketType === 'Student' ? info.studentPrice : info.gaPrice;
+    const ticketPrice = getTicketPrice(info);
     const totalCost = ticketPrice * info.quantity;
-    const plural = info.quantity !== 1 ? 's' : '';
 
-    // TODO: if tickets are free, disable confirmation
+    // if tickets are free, skip confirmation
+    if (totalCost === 0) {
+        return logTicketSale(info);
+    }
+
+    const plural = info.quantity !== 1 ? 's' : '';
 
     return Swal({
         title: `Ask them for $${totalCost}.`,
-        text: `They will receive ${info.quantity} ${info.ticketType} ticket${plural}. If they don't have the money, click cancel.`,
+        text: `They will receive ${info.quantity} ${info.ticketType} ticket${plural} at $${ticketPrice} per ticket.`,
         type: 'warning',
         showCancelButton: true,
         confirmButtonText: 'I got the money!'
@@ -348,8 +366,20 @@ function confirmPayment(info) {
         });
 }
 
+function getTicketPrice(info) {
+    if (info.ticketType === 'Student') {
+        return info.studentPrice;
+    }
+
+    if (info.ticketType === 'Guest') {
+        return info.guestPrice;
+    }
+
+    return info.gaPrice;
+}
+
 function checkBannerId(sheetId, enteredBannerId) {
-    return readBannerIdRow(sheetId).catch(err => console.error(err))
+    return getAllBannerIds(sheetId).catch(err => console.error(err))
         // grab the error message text from the api json
         .catch(({result}) => Promise.reject(result.error.message)) 
 
@@ -362,6 +392,53 @@ function checkBannerId(sheetId, enteredBannerId) {
                 return true;
             }
 	    });
+}
+
+function verifyAndNormalizeBannerId(info) {
+    if (info.bannerId.length !== 9) {
+        return Promise.reject('The banner ID is not 9 digits long.');
+    }
+
+    info.bannerId = info.bannerId.replace(/^0+/, ''); // remove leading zeros
+    return Promise.resolve();
+}
+
+function ensureIdIsAllowedMoreTickets(info) {
+    return getAllPurchases(info.sheetId).then((allPurchases) => {
+        console.log(info);
+        console.log(allPurchases);
+
+        let numberOfGuestTicketsThisPersonHasAlreadyPurchased = 0;
+
+        for (let i = 0; i < allPurchases[0].length; i++) {
+            const ticketType = allPurchases[0][i];
+            const bannerId = allPurchases[1][i];
+            const quantity = parseInt(allPurchases[2][i]);
+
+            // if the purchase was made by the same person trying to
+            // purchase more guest tickets now
+            if (ticketType === 'Guest' && info.bannerId === bannerId) {
+                numberOfGuestTicketsThisPersonHasAlreadyPurchased += quantity;
+            }
+        }
+
+        let numberOfAllowedGuestTicketsRemainingForThisPerson 
+            = parseInt(info.guestMax) - numberOfGuestTicketsThisPersonHasAlreadyPurchased;
+
+        // if the number of tickets they are trying to buy is greater than
+        // the number of tickets they are still allowed to buy, don't let em
+        if (parseInt(info.quantity) > numberOfAllowedGuestTicketsRemainingForThisPerson) {
+            return Promise.reject(
+                'This person has already bought '
+                + numberOfGuestTicketsThisPersonHasAlreadyPurchased
+                + ' guest tickets.<br>Each student is only allowed '
+                + info.guestMax
+                + ' guest tickets.');
+        }
+
+        return Promise.resolve();
+        
+    });
 }
 
 function logTicketSale(info) {
@@ -385,6 +462,8 @@ function logTicketSale(info) {
 }
 
 function errorNoTicket(errorMessage) {
+    console.error(errorMessage);
+    
 	Swal('Don\'t give them a ticket!', errorMessage, 'error');
 }
 
@@ -424,24 +503,34 @@ function appendRow(spreadsheetId, newRow) {
 	});
 }
 
-function readBannerIdRow(spreadsheetId) {
-	return gapi.client.sheets.spreadsheets.values.get({
+// gets a lit of all banner ids that have been used to make a ticket purchase
+function getAllBannerIds(spreadsheetId) {
+    return readRangeFromSheet(spreadsheetId, 'C2:C')
+        // strip the container array
+        .then((res) => res[0]);
+}
+
+function getAllPurchases(spreadsheetId) {
+	return readRangeFromSheet(spreadsheetId, 'B2:D');
+}
+
+function readRangeFromSheet(spreadsheetId, rangeToRead) {
+    return gapi.client.sheets.spreadsheets.values.get({
 		spreadsheetId,
-		range: SHEET_NAME + '!C2:C',
+		range: SHEET_NAME + '!' + rangeToRead,
 		resource: {
 			majorDimension: "COLUMNS"
         }
     })
-
-    // get an array of all banner ids from the response
-    .then(res => {
-        // handle empty spreadsheet because values won't exist
-        if (res.result.hasOwnProperty('values')) {
-            return res.result.values[0];
-        } else {
-            return [];
-        }
-    });
+        // get an array of all banner ids from the response
+        .then(res => {
+            // handle empty spreadsheet because values won't exist
+            if (res.result.hasOwnProperty('values')) {
+                return res.result.values;
+            } else {
+                return [[]];
+            }
+        });
 }
 
 function getSelectedTicketsToOffer() {

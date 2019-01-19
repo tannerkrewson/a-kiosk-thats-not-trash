@@ -100,35 +100,56 @@
 
 			<form id="ticket-entry">
 				<label for="banner-id">Select ticket type:</label>
-				<div id="ticket-type">
-					<div class="form-check">
-						<input class="form-check-input" type="radio" name="ticket-type" id="student-radio" value="Student" checked>
-						<label class="form-check-label" for="student-radio">
-							Student
-						</label>
-					</div>
-					<div class="form-check">
-						<input class="form-check-input" type="radio" name="ticket-type" id="guest-radio" value="Guest">
-						<label class="form-check-label" for="guest-radio">
-							Student Guest
-						</label>
-					</div>
-					<div class="form-check">
-						<input class="form-check-input" type="radio" name="ticket-type" id="ga-radio" value="GA">
-						<label class="form-check-label" for="ga-radio">
-							General Admission
-						</label>
-					</div>
+				<div id="ticket-type" class="list-group">
+					<a
+						href="#"
+						name="ticket-type"
+						id="student-radio"
+						value="Student"
+						class="list-group-item list-group-item-action"
+					>
+						Student
+						<span>
+							<span class="badge badge-info badge-pill">14 sold</span>
+							<span class="badge badge-success badge-pill">$5</span>
+						</span>
+					</a>
+					<a
+						href="#"
+						name="ticket-type"
+						id="guest-radio"
+						value="Guest"
+						class="list-group-item list-group-item-action"
+					>
+						Student Guest
+						<span>
+							<span class="badge badge-info badge-pill">14 sold</span>
+							<span class="badge badge-success badge-pill">$5</span>
+						</span>
+					</a>
+					<a 
+						href="#"
+						name="ticket-type"
+						id="ga-radio"
+						value="GA"
+						class="list-group-item list-group-item-action"
+					>
+						General Admission
+						<span>
+							<span class="badge badge-info badge-pill">14 sold</span>
+							<span class="badge badge-success badge-pill">$5</span>
+						</span>
+					</a>
 				</div>
 				<br>
 				<div id="banner-id" class="form-group">
 					<label for="banner-id">Banner ID:</label>
-					<input type="text" class="form-control" id="banner-id-input" maxlength="9" placeholder="If this box has blue edges, scan the card!">
+					<input type="text" class="form-control" id="banner-id-input" maxlength="9" placeholder="If this box has blue edges, scan the card!" autocomplete="off">
 					<small class="form-text text-muted">Do not manually enter the banner ID number. The student must have their card present to buy a ticket.</small>
 				</div>
 				<div id="quantity" class="form-group">
 					<label for="banner-id">Quantity:</label>
-					<input type="number" class="form-control" id="quantity-input" maxlength="2">
+					<input type="number" class="form-control" id="quantity-input" autocomplete="off">
 					<small id="guest-ticket-info" class="form-text text-muted">
 						A student can buy up to X guest tickets.
 					</small>

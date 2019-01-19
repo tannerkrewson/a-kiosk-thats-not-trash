@@ -54,7 +54,7 @@ CUSTOM CODE
 
 const SHEET_NAME = 'Ticket Sales';
 
-const TICKET_TYPE_RADIO_GROUP = $('input[type=radio][name=ticket-type]');
+const TICKET_TYPE_RADIO_GROUP = $('a[name=ticket-type]');
 const TICKETS_TO_OFFER_CHECK_GROUP = $('input[type=checkbox][name=tickets-to-offer]');
 const ALL_TICKET_TYPES = ['Student', 'Guest', 'GA'];
 
@@ -196,9 +196,13 @@ function validatePrices(info) {
     return true;
 }
  
-TICKET_TYPE_RADIO_GROUP.on('change', () => {
-    const selectedTicketType = getSelectedTicketType();
+TICKET_TYPE_RADIO_GROUP.on('click', e => {
 
+    $('#ticket-type').children().removeClass('active');
+    $(e.currentTarget).addClass('active');
+    
+    const selectedTicketType = e.currentTarget.getAttribute('value');
+    
     if (selectedTicketType === 'Student') {
         $('#banner-id').show();
         $('#quantity').hide();
@@ -560,11 +564,6 @@ function countBoughtTickets(allPurchases, ticketType, bannerId) {
     return count;
 }
 
-// gets a list of all banner ids that have been used to make a ticket purchase
-function getAllStudentBannerIds(spreadsheetId) {
-
-}
-
 function getAllPurchases(spreadsheetId) {
     return readRangeFromSheet(spreadsheetId, 'B2:D')
         // grab the error message text from the api json
@@ -603,7 +602,7 @@ function getSelectedTicketsToOffer() {
 }
 
 function getSelectedTicketType() {
-    return TICKET_TYPE_RADIO_GROUP.filter(':checked')[0].value;
+    return TICKET_TYPE_RADIO_GROUP.closest('.active').attr('value');
 }
 
 function showTicketTypes(ticketTypesToShow) {
@@ -616,7 +615,7 @@ function showTicketTypes(ticketTypesToShow) {
             // make sure that the first visible ticket type is selected by default
             if (!first) {
                 // .change ensures the events attached to checking the box fire
-                $(selector).prop("checked", true).change();
+                $(selector).click();
                 first = true;
             }
         } else {

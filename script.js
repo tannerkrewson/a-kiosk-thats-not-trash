@@ -136,7 +136,9 @@ function checkForSavedInfoFromCookies() {
     if (!savedInfo) return false;
     
     $('#sheet-link').val(savedInfo.sheetLink);
-	$('#student-price').val(savedInfo.studentPrice);
+    $('#student-price').val(savedInfo.studentPrice);
+    $('#guest-price').val(savedInfo.guestPrice);
+    $('#guest-max').val(savedInfo.guestMax);
     $('#ga-price').val(savedInfo.gaPrice);
 
     return savedInfo;

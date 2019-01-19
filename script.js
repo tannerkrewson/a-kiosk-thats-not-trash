@@ -180,6 +180,7 @@ function validateInfo(info) {
             }
 
             Cookies.set('info', info);
+
             prepTicketEntry(info);
         })
         .catch(err => {
@@ -309,17 +310,25 @@ function spreadsheetBatchUpdate(spreadsheetId, requests) {
 	});
 }
 
+function callForLatestTicketCounts(info) {
+    return getAllPurchases(info.sheetId)
+        .then(allPurchases => updatePurchaseCount(info, allPurchases));
+}
+
 function prepTicketEntry(info) {
-    showScreen('#ticket-entry');
-    resetTicketEntry();
+    callForLatestTicketCounts(info)
+        .then(() => {
+            showScreen('#ticket-entry');
+            resetTicketEntry();
+        
+            showTicketTypes(info.ticketTypes);
+            checkSelectedTicketTypes(info.ticketTypes);
+        
+            // sometimes the form submit button tries to take focus,
+            // so grab it again for good measure after .5 seconds
+            setTimeout(() => $('#banner-id-input').focus(), 500);
+        });
 
-    showTicketTypes(info.ticketTypes);
-    checkSelectedTicketTypes(info.ticketTypes);
-
-    // sometimes the form submit button tries to take focus,
-    // so grab it again for good measure after .5 seconds
-    setTimeout(() => $('#banner-id-input').focus(), 500);
-    
 	$('#ticket-entry').off('submit');
 	$('#ticket-entry').on('submit', () => {
 		event.preventDefault();
@@ -571,16 +580,22 @@ function countBoughtTickets(allPurchases, ticketType, bannerId) {
 }
 
 function updatePurchaseCount(info, allPurchases) {
+    for (let availableTicketType of info.ticketTypes) {
+        availableTicketType.sold = 0;
+    }
+
     for (let thisTicket of allPurchases) {
         const thisTicketType = thisTicket[0];
         const thisTicketQuantity = thisTicket[2];
 
         for (let availableTicketType of info.ticketTypes) {
             if (thisTicketType === availableTicketType.name) {
-                availableTicketType.sold += thisTicketQuantity;
+                availableTicketType.sold += parseInt(thisTicketQuantity);
             }
         }
     }
+
+    return allPurchases;
 }
 
 function getAllPurchases(spreadsheetId) {
@@ -621,7 +636,7 @@ function getSelectedTicketsToOffer() {
 }
 
 function getSelectedTicketType() {
-    return TICKET_TYPE_RADIO_GROUP.find('.active').attr('value');
+    return TICKET_TYPE_RADIO_GROUP.closest('.active').attr('value');
 }
 
 function showTicketTypes(allTicketTypes) {

@@ -361,13 +361,12 @@ function sellStudentTicket(info) {
 
 function sellGuestTickets(info) {
     return verifyAndNormalizeBannerId(info)
-
+        .then(() => verifyQuantity(info))
         .then(() => ensureIdIsAllowedMoreTickets(info));
 }
 
 function sellGATickets(info) {
-    // GA tickets don't require any extra checks!
-    return Promise.resolve();
+    return verifyQuantity(info);
 }
 
 function confirmPayment(info) {
@@ -415,12 +414,26 @@ function getTicketPrice(info) {
 }
 
 function verifyAndNormalizeBannerId(info) {
+    if (!/^\d+$/.test(info.bannerId)) {
+        return Promise.reject('The banner ID must only contain numbers.');
+    }
+
     if (info.bannerId.length !== 9) {
         return Promise.reject('The banner ID must be 9 digits long.');
     }
 
     info.bannerId = info.bannerId.replace(/^0+/, ''); // remove leading zeros
     return Promise.resolve();
+}
+
+function verifyQuantity(info) {
+    info.quantity = parseInt(info.quantity);
+    
+    if (isNaN(info.quantity) || info.quantity <= 0) {
+        return Promise.reject('Invalid quantity.');
+    } else {
+        return Promise.resolve();
+    }
 }
 
 function ensureBannerIdIsUnused(info) {

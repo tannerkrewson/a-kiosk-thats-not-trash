@@ -143,15 +143,57 @@ function checkForSavedInfoFromCookies() {
 }
 
 function validateInfo(info) {
-    checkIfSheetValid(info.sheetId).then(response => {
-        // these run if the sheet is, in fact, a real google sheet
-        Cookies.set('info', info);
-		prepTicketEntry(info)
-	}).catch(err => {
-        console.error(err);
-		Swal('Invalid Google Sheet!', err.result.error.message, 'error');
-        showScreen('#sheet-setup');
-	});
+    return checkIfSheetValid(info.sheetId)
+        .catch(err => {
+            console.error(err);
+            throw 'Invalid Google Sheet.' + err.result.error.message;
+        })
+        .then(() => {
+            // these run if the sheet is, in fact, a real google sheet
+
+            if (info.ticketTypesToOffer.length === 0) {
+                throw 'Please select at least one ticket type.';
+            }
+
+            if (!validatePrices(info)) {
+                throw 'Invalid ticket prices.';
+            }
+
+            const isGuestSelected = info.ticketTypesToOffer.includes('Guest');
+            const isGuestMaxValid = typeof info.guestMax && info.guestMax > 0
+            if (isGuestSelected && !isGuestMaxValid) {
+                throw 'Invalid max guest ticket count.';
+            }
+
+            Cookies.set('info', info);
+            prepTicketEntry(info);
+        })
+        .catch(err => {
+            console.error(err);
+            Swal('Try again', err, 'error');
+            showScreen('#sheet-setup');
+        });
+}
+
+function validatePrices(info) {
+    let prices = [];
+
+    if (info.ticketTypesToOffer.includes('Student')) {
+        prices.push(info.studentPrice);
+    }
+    if (info.ticketTypesToOffer.includes('Guest')) {
+        prices.push(info.guestPrice);
+    }
+    if (info.ticketTypesToOffer.includes('GA')) {
+        prices.push(info.gaPrice);
+    }
+
+    for (let price of prices) {
+        price = parseFloat(price);
+        if (isNaN(price) || price < 0) return false;
+    }
+
+    return true;
 }
  
 TICKET_TYPE_RADIO_GROUP.on('change', () => {
@@ -324,7 +366,7 @@ function sellGuestTickets(info) {
 }
 
 function sellGATickets(info) {
-    // ga tickets don't require any extra checks!
+    // GA tickets don't require any extra checks!
     return Promise.resolve();
 }
 
@@ -388,7 +430,7 @@ function ensureBannerIdIsUnused(info) {
                 = countBoughtTickets(allPurchases, 'Student', info.bannerId);
 
             if (numberOfStudentsTicketsBoughtWithThisBannerId > 0) {
-                return Promise.reject('The banner ID has already been used.');
+                throw 'The banner ID has already been used.';
             } else {
                 // it hasn't been used before
                 return true;
@@ -408,15 +450,14 @@ function ensureIdIsAllowedMoreTickets(info) {
             // if the number of tickets they are trying to buy is greater than
             // the number of tickets they are still allowed to buy, don't let em
             if (parseInt(info.quantity) > numberOfAllowedGuestTicketsRemainingForThisPerson) {
-                return Promise.reject(
-                    'This person has already bought '
+                throw 'This person has already bought '
                     + numberOfGuestTicketsThisPersonHasAlreadyPurchased
                     + ' guest tickets.<br>Each student is only allowed '
                     + info.guestMax
-                    + ' guest tickets.');
+                    + ' guest tickets.';
             }
 
-            return Promise.resolve();
+            return true;
             
         });
 }

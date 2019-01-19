@@ -118,22 +118,17 @@ $("#sheet-setup").on('submit', event => {
     let sheetId = sheetLink.split('/')[5];
 
     let ticketTypes = [
-        {
-            name: 'Student',
-            price: $('#student-price').val()
-        },
-        {
-            name: 'Guest',
-            price: $('#guest-price').val()
-        },
-        {
-            name: 'GA',
-            price: $('#ga-price').val()
-        }
+        { name: 'Student' },
+        { name: 'Guest' },
+        { name: 'GA' }
     ];
 
+    // fill in the details about all of the ticket types
     let ticketTypesToOffer = getSelectedTicketsToOffer();
     for (let ticketType of ticketTypes) {
+        const selector = '#' + ticketType.name.toLowerCase() + '-price';
+        ticketType.price = $(selector).val();
+
         ticketType.isOffered = ticketTypesToOffer.includes(ticketType.name);
         ticketType.sold = 0;
     }
@@ -626,25 +621,31 @@ function getSelectedTicketsToOffer() {
 }
 
 function getSelectedTicketType() {
-    return TICKET_TYPE_RADIO_GROUP.closest('.active').attr('value');
+    return TICKET_TYPE_RADIO_GROUP.find('.active').attr('value');
 }
 
 function showTicketTypes(allTicketTypes) {
     let first = false;
     for (let ticketType of allTicketTypes) {
-        const selector = `#${ticketType.name.toLowerCase()}-radio`;
+        const thisButton = $(`#${ticketType.name.toLowerCase()}-radio`);
         if (ticketType.isOffered) {
-            $(selector).parent().show();
+            thisButton.show();
 
             // make sure that the first visible ticket type is selected by default
             if (!first) {
                 // .change ensures the events attached to checking the box fire
-                $(selector).click();
+                thisButton.click();
                 first = true;
             }
         } else {
-            $(selector).parent().hide();
+            thisButton.hide();
         }
+
+        // update the price badge
+        thisButton.find('.price').html('$' + ticketType.price);
+
+        // update the sold badge
+        thisButton.find('.sold').html(ticketType.sold + ' sold');
     }
 }
 

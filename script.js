@@ -116,16 +116,31 @@ $("#sheet-setup").on('submit', event => {
 
     let sheetLink = $('#sheet-link').val();
     let sheetId = sheetLink.split('/')[5];
-    
-    let ticketTypesToOffer = getSelectedTicketsToOffer();
 
-    let studentPrice = $('#student-price').val();
-    let guestPrice = $('#guest-price').val();
-    let gaPrice = $('#ga-price').val();
+    let ticketTypes = [
+        {
+            name: 'Student',
+            price: $('#student-price').val()
+        },
+        {
+            name: 'Guest',
+            price: $('#guest-price').val()
+        },
+        {
+            name: 'GA',
+            price: $('#ga-price').val()
+        }
+    ];
+
+    let ticketTypesToOffer = getSelectedTicketsToOffer();
+    for (let ticketType of ticketTypes) {
+        ticketType.isOffered = ticketTypesToOffer.includes(ticketType.name);
+        ticketType.sold = 0;
+    }
 
     let guestMax = $('#guest-max').val();
     
-    let info = { sheetLink, sheetId, studentPrice, guestPrice, gaPrice, ticketTypesToOffer, guestMax };
+    let info = { sheetLink, sheetId, ticketTypes, guestMax };
 
     // if the info is good, this will show ticket entry ui
     validateInfo(info);
@@ -134,12 +149,14 @@ $("#sheet-setup").on('submit', event => {
 function checkForSavedInfoFromCookies() {
     let savedInfo = Cookies.getJSON('info');
     if (!savedInfo) return false;
+
+    for (let ticketType of savedInfo.ticketTypes) {
+        const ticketName = ticketType.name.toLowerCase();
+        $('#' + ticketName + '-price').val(ticketType.price);
+    }
     
     $('#sheet-link').val(savedInfo.sheetLink);
-    $('#student-price').val(savedInfo.studentPrice);
-    $('#guest-price').val(savedInfo.guestPrice);
     $('#guest-max').val(savedInfo.guestMax);
-    $('#ga-price').val(savedInfo.gaPrice);
 
     return savedInfo;
 }
@@ -153,7 +170,7 @@ function validateInfo(info) {
         .then(() => {
             // these run if the sheet is, in fact, a real google sheet
 
-            if (info.ticketTypesToOffer.length === 0) {
+            if (!isAtLeastOneTicketTypeSelected(info.ticketTypes)) {
                 throw 'Please select at least one ticket type.';
             }
 
@@ -161,8 +178,8 @@ function validateInfo(info) {
                 throw 'Invalid ticket prices.';
             }
 
-            const isGuestSelected = info.ticketTypesToOffer.includes('Guest');
-            const isGuestMaxValid = typeof info.guestMax && info.guestMax > 0
+            const isGuestSelected = info.ticketTypes.find(type => type.name === 'Guest').isOffered;
+            const isGuestMaxValid = typeof info.guestMax && info.guestMax > 0;
             if (isGuestSelected && !isGuestMaxValid) {
                 throw 'Invalid max guest ticket count.';
             }
@@ -177,21 +194,16 @@ function validateInfo(info) {
         });
 }
 
+function isAtLeastOneTicketTypeSelected(allTicketTypes) {
+    for (let ticketType of allTicketTypes) {
+        if (ticketType.isOffered) return true;
+    }
+    return false;
+}
+
 function validatePrices(info) {
-    let prices = [];
-
-    if (info.ticketTypesToOffer.includes('Student')) {
-        prices.push(info.studentPrice);
-    }
-    if (info.ticketTypesToOffer.includes('Guest')) {
-        prices.push(info.guestPrice);
-    }
-    if (info.ticketTypesToOffer.includes('GA')) {
-        prices.push(info.gaPrice);
-    }
-
-    for (let price of prices) {
-        price = parseFloat(price);
+    for (let ticketType of info.ticketTypes) {
+        let price = parseFloat(ticketType.price);
         if (isNaN(price) || price < 0) return false;
     }
 
@@ -306,8 +318,8 @@ function prepTicketEntry(info) {
     showScreen('#ticket-entry');
     resetTicketEntry();
 
-    showTicketTypes(info.ticketTypesToOffer);
-    checkSelectedTicketTypes(info.ticketTypesToOffer);
+    showTicketTypes(info.ticketTypes);
+    checkSelectedTicketTypes(info.ticketTypes);
 
     // sometimes the form submit button tries to take focus,
     // so grab it again for good measure after .5 seconds
@@ -408,15 +420,14 @@ function confirmPayment(info) {
 }
 
 function getTicketPrice(info) {
-    if (info.ticketType === 'Student') {
-        return info.studentPrice;
+
+    for (let ticketType of info.ticketTypes) {
+        if (info.ticketType === ticketType.name) {
+            return ticketType.price;
+        }
     }
 
-    if (info.ticketType === 'Guest') {
-        return info.guestPrice;
-    }
-
-    return info.gaPrice;
+    throw 'Ticket type ' + info.ticketType + ' not found.'
 }
 
 function verifyAndNormalizeBannerId(info) {
@@ -512,7 +523,7 @@ function appendPurchaseToSheet(info) {
     const weekday = now.toLocaleString('en-US', { weekday: 'short' });
     const timestamp = weekday + ' ' + now.toLocaleString();
 
-    const ticketPrice = info.ticketType === 'Student' ? info.studentPrice : info.gaPrice;
+    const ticketPrice = getTicketPrice(info);
     const totalCost = ticketPrice * info.quantity;
 
     const newRow = [
@@ -548,9 +559,7 @@ function appendRow(spreadsheetId, newRow) {
 function countBoughtTickets(allPurchases, ticketType, bannerId) {
     let count = 0;
 
-    for (let i = 0; i < allPurchases.length; i++) {
-        const thisTicket = allPurchases[i];
-
+    for (let thisTicket of allPurchases) {
         const thisTicketType = thisTicket[0];
         const thisTicketBannerId = thisTicket[1];
         const thisTicketQuantity = thisTicket[2];
@@ -564,6 +573,19 @@ function countBoughtTickets(allPurchases, ticketType, bannerId) {
     }
 
     return count;
+}
+
+function updatePurchaseCount(info, allPurchases) {
+    for (let thisTicket of allPurchases) {
+        const thisTicketType = thisTicket[0];
+        const thisTicketQuantity = thisTicket[2];
+
+        for (let availableTicketType of info.ticketTypes) {
+            if (thisTicketType === availableTicketType.name) {
+                availableTicketType.sold += thisTicketQuantity;
+            }
+        }
+    }
 }
 
 function getAllPurchases(spreadsheetId) {
@@ -607,11 +629,11 @@ function getSelectedTicketType() {
     return TICKET_TYPE_RADIO_GROUP.closest('.active').attr('value');
 }
 
-function showTicketTypes(ticketTypesToShow) {
+function showTicketTypes(allTicketTypes) {
     let first = false;
-    for (const ticketType of ALL_TICKET_TYPES) {
-        const selector = `#${ticketType.toLowerCase()}-radio`;
-        if (ticketTypesToShow.includes(ticketType)) {
+    for (let ticketType of allTicketTypes) {
+        const selector = `#${ticketType.name.toLowerCase()}-radio`;
+        if (ticketType.isOffered) {
             $(selector).parent().show();
 
             // make sure that the first visible ticket type is selected by default
@@ -626,11 +648,10 @@ function showTicketTypes(ticketTypesToShow) {
     }
 }
 
-function checkSelectedTicketTypes(ticketTypesToCheck) {
-    let first = false;
-    for (const ticketType of ALL_TICKET_TYPES) {
-        const selector = `#${ticketType.toLowerCase()}-check`;
-        if (ticketTypesToCheck.includes(ticketType)) {
+function checkSelectedTicketTypes(allTicketTypes) {
+    for (let ticketType of allTicketTypes) {
+        const selector = `#${ticketType.name.toLowerCase()}-check`;
+        if (ticketType.isOffered) {
             $(selector).prop("checked", true).change();
         } else {
             $(selector).prop("checked", false).change();

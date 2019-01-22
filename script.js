@@ -72,7 +72,6 @@ function handleSignoutClick(event) {
 
 // ran when google is logged in or out
 function updateSigninStatus(isSignedIn) {
-    hideAll();
 	if (isSignedIn) {
         savedInfo = checkForSavedInfoFromCookies();
         if (savedInfo) {
@@ -110,7 +109,7 @@ function showLoading() {
 }
 
 function showScreen(id) {
-	hideAll();
+    hideAll();
     $(id).show();
 }
 
@@ -321,7 +320,7 @@ function callForLatestTicketCounts(info) {
 
 function prepTicketEntry(info) {
     callForLatestTicketCounts(info)
-        .then(() => {
+        .then(() => {            
             showScreen('#ticket-entry');
             resetTicketEntry();
         

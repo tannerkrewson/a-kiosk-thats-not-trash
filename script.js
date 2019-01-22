@@ -100,6 +100,10 @@ function resetTicketEntry() {
     $('#quantity-input').val('');
 }
 
+function updateGuestMaxDisplay(guestMax) {
+    $('#guest-ticket-max-count').html(guestMax);
+}
+
 function showLoading() {
 	hideAll();
 	$('#loading').show();
@@ -323,6 +327,7 @@ function prepTicketEntry(info) {
         
             showTicketTypes(info.ticketTypes);
             checkSelectedTicketTypes(info.ticketTypes);
+            updateGuestMaxDisplay(info.guestMax);
         
             // sometimes the form submit button tries to take focus,
             // so grab it again for good measure after .5 seconds

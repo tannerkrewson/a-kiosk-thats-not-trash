@@ -15,7 +15,7 @@ const DISCOVERY_DOCS = ["https://sheets.googleapis.com/$discovery/rest?version=v
 const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
 
 let authorizeButton = document.getElementById('sheets-login');
-//let signoutButton = document.getElementById('signout_button');
+let signoutButton = document.getElementById('sheets-logout');
 
 /**
  *  On load, called to load the auth2 library and API client library.
@@ -41,7 +41,7 @@ function initClient() {
 		// Handle the initial sign-in state.
 		updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
 		authorizeButton.onclick = handleAuthClick;
-		//signoutButton.onclick = handleSignoutClick;
+		signoutButton.onclick = handleSignoutClick;
 	}, error => {
         Swal('Try refreshing the page', JSON.stringify(error, null, 2), 'error');
 	});

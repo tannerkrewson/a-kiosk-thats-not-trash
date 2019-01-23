@@ -129,7 +129,10 @@ function showScreen(id) {
 
 $("#sheet-setup").on('submit', event => {
 	event.preventDefault();
-	showLoading();
+    showLoading();
+
+    // we don't want to show the warning if settings are invalid
+    $('#settings-warning').hide();
 
     let sheetLink = $('#sheet-link').val();
     let sheetId = sheetLink.split('/')[5];
@@ -198,7 +201,8 @@ function validateInfo(info) {
 
             $('#settings-warning').show();
 
-            Cookies.set('info', info);
+            // expires in 2 months
+            Cookies.set('info', info, { expires: 60 });
 
             prepTicketEntry(info);
         })
@@ -217,8 +221,6 @@ function isAtLeastOneTicketTypeSelected(allTicketTypes) {
 }
 
 function validatePrices(info) {
-    console.log(info.ticketTypes);
-    
     for (let ticketType of info.ticketTypes) {
         let price = parseFloat(ticketType.price);
         if (isNaN(price) || price < 0) return false;

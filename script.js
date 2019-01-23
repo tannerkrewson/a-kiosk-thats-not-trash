@@ -173,10 +173,15 @@ function checkForSavedInfoFromCookies() {
     if (!savedInfo) return false;
 
     for (let ticketType of savedInfo.ticketTypes) {
+        // fill in ticket price inputs
         const ticketName = ticketType.name.toLowerCase();
         $('#' + ticketName + '-price').val(ticketType.price);
+
+        // check the boxes of what tickets are offered
+        checkSelectedTicketTypes(savedInfo.ticketTypes);
     }
     
+    // fill in the other two sheet settings boxes
     $('#sheet-link').val(savedInfo.sheetLink);
     $('#guest-max').val(savedInfo.guestMax);
 
@@ -215,6 +220,11 @@ function validateInfo(info) {
         })
         .catch(err => {
             console.error(err);
+
+            // in case they accidentally messed up a setting, 
+            // restore the last good settings from cookies
+            checkForSavedInfoFromCookies();
+
             Swal('Try again', err, 'error');
             showScreen('#sheet-setup');
         });
@@ -354,7 +364,6 @@ function prepTicketEntry(info) {
             resetTicketEntry();
         
             showTicketTypes(info.ticketTypes);
-            checkSelectedTicketTypes(info.ticketTypes);
             updateGuestMaxDisplay(info.guestMax);
             updateSheetLink(info.sheetLink);
         

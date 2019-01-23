@@ -14,6 +14,8 @@ const DISCOVERY_DOCS = ["https://sheets.googleapis.com/$discovery/rest?version=v
 // included, separated by spaces.
 const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
 
+let auth2;
+
 let authorizeButton = document.getElementById('sheets-login');
 let signoutButton = document.getElementById('sheets-logout');
 
@@ -35,11 +37,13 @@ function initClient() {
 		discoveryDocs: DISCOVERY_DOCS,
 		scope: SCOPES
 	}).then(() => {
-		// Listen for sign-in state changes.
-		gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
+        auth2 = gapi.auth2.getAuthInstance();
 
-		// Handle the initial sign-in state.
-		updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+		// Listen for sign-in state changes.
+		auth2.isSignedIn.listen(updateSigninStatus);
+
+        // Handle the initial sign-in state.
+		updateSigninStatus(auth2.isSignedIn.get());
 		authorizeButton.onclick = handleAuthClick;
 		signoutButton.onclick = handleSignoutClick;
 	}, error => {
@@ -61,18 +65,22 @@ const ALL_TICKET_TYPES = ['Student', 'Guest', 'GA'];
 // ran when sign in the user upon button click.
 function handleAuthClick(event) {
 	showLoading();
-	gapi.auth2.getAuthInstance().signIn();
+    auth2.signIn();
 }
 
 // ran when signout button is clicked (there isn't one right now)
 function handleSignoutClick(event) {
     showLoading();
-	gapi.auth2.getAuthInstance().signOut();
+	auth2.signOut();
 }
 
 // ran when google is logged in or out
 function updateSigninStatus(isSignedIn) {
+    $('#settings-warning').hide();
+
 	if (isSignedIn) {
+        displayUserInfo();
+
         savedInfo = checkForSavedInfoFromCookies();
         if (savedInfo) {
             // if the cookies had data, make sure it's still good
@@ -85,6 +93,12 @@ function updateSigninStatus(isSignedIn) {
         // if the login failed, show the used the login screen again
 		showScreen('#auth');
 	}
+}
+
+function displayUserInfo() {
+    let profile = auth2.currentUser.get().getBasicProfile();
+    
+    $('#current-user-name').html(profile.getName());
 }
 
 function hideAll() {
@@ -182,6 +196,8 @@ function validateInfo(info) {
                 throw 'Invalid max guest ticket count.';
             }
 
+            $('#settings-warning').show();
+
             Cookies.set('info', info);
 
             prepTicketEntry(info);
@@ -201,6 +217,8 @@ function isAtLeastOneTicketTypeSelected(allTicketTypes) {
 }
 
 function validatePrices(info) {
+    console.log(info.ticketTypes);
+    
     for (let ticketType of info.ticketTypes) {
         let price = parseFloat(ticketType.price);
         if (isNaN(price) || price < 0) return false;

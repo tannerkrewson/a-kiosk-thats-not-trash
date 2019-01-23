@@ -63,3 +63,16 @@ footer {
     background-color: #d6d8db;
     border-color: #929aa0;
 }
+
+#settings-warning {
+    display: none;
+}
+#student-options {
+    display: none;
+}
+ #guest-options {
+    display: none;
+}
+#ga-options {
+    display: none;
+}

@@ -117,6 +117,13 @@ function updateGuestMaxDisplay(guestMax) {
     $('#guest-ticket-max-count').html(guestMax);
 }
 
+function updateSheetLink(sheetLink) {
+    $('#sheet-link-button').off();
+    $('#sheet-link-button').on('click', () => {
+        window.open(sheetLink);
+    });
+}
+
 function showLoading() {
 	hideAll();
 	$('#loading').show();
@@ -221,11 +228,9 @@ function isAtLeastOneTicketTypeSelected(allTicketTypes) {
 }
 
 function validatePrices(info) {
-    console.log(info);
-    
     for (let ticketType of info.ticketTypes) {
         if (!ticketType.isOffered) continue;
-        
+
         let price = parseFloat(ticketType.price);
         if (isNaN(price) || price < 0) return false;
     }
@@ -351,6 +356,7 @@ function prepTicketEntry(info) {
             showTicketTypes(info.ticketTypes);
             checkSelectedTicketTypes(info.ticketTypes);
             updateGuestMaxDisplay(info.guestMax);
+            updateSheetLink(info.sheetLink);
         
             // sometimes the form submit button tries to take focus,
             // so grab it again for good measure after .5 seconds

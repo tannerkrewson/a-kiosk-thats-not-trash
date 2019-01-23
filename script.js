@@ -221,7 +221,11 @@ function isAtLeastOneTicketTypeSelected(allTicketTypes) {
 }
 
 function validatePrices(info) {
+    console.log(info);
+    
     for (let ticketType of info.ticketTypes) {
+        if (!ticketType.isOffered) continue;
+        
         let price = parseFloat(ticketType.price);
         if (isNaN(price) || price < 0) return false;
     }

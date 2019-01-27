@@ -58,7 +58,8 @@ CUSTOM CODE
 
 const SHEET_NAME = 'Ticket Sales';
 
-const TICKET_TYPE_RADIO_GROUP = $('a[name=ticket-type]');
+const TICKET_TYPE_LGI_GROUP = $('a[name=ticket-type]');
+const TICKET_TYPE_RADIO_GROUP = $('input[type=radio][name=ticket-select]');
 const TICKETS_TO_OFFER_CHECK_GROUP = $('input[type=checkbox][name=tickets-to-offer]');
 const ALL_TICKET_TYPES = ['Student', 'Guest', 'GA'];
 
@@ -247,13 +248,18 @@ function validatePrices(info) {
 
     return true;
 }
- 
-TICKET_TYPE_RADIO_GROUP.on('click', e => {
 
-    $('#ticket-type').children().removeClass('active');
-    $(e.currentTarget).addClass('active');
-    
-    const selectedTicketType = e.currentTarget.getAttribute('value');
+// when the area around the radio button is clicked, 
+// but the radio button/label itself is not clicked,
+// simulate a click on the radio button
+TICKET_TYPE_LGI_GROUP.on('click', e => {
+    const selectedTicketType = e.currentTarget.getAttribute('value').toLowerCase();
+    $('#' + selectedTicketType + '-radio').prop("checked", true).change();
+
+});
+ 
+TICKET_TYPE_RADIO_GROUP.on('change', e => {  
+    const selectedTicketType = getSelectedTicketType();
     
     if (selectedTicketType === 'Student') {
         $('#banner-id').show();
@@ -684,13 +690,13 @@ function getSelectedTicketsToOffer() {
 }
 
 function getSelectedTicketType() {
-    return TICKET_TYPE_RADIO_GROUP.closest('.active').attr('value');
+    return TICKET_TYPE_RADIO_GROUP.filter(':checked')[0].value;
 }
 
 function showTicketTypes(allTicketTypes) {
     let first = false;
     for (let ticketType of allTicketTypes) {
-        const thisButton = $(`#${ticketType.name.toLowerCase()}-radio`);
+        const thisButton = $(`#${ticketType.name.toLowerCase()}-lgi`);
         if (ticketType.isOffered) {
             thisButton.show();
 

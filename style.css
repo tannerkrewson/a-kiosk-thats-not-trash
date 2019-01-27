@@ -58,12 +58,6 @@ footer {
     justify-content: space-between;
 }
 
-.list-group-item.active {
-    color: #383d41;
-    background-color: #d6d8db;
-    border-color: #929aa0;
-}
-
 #settings-warning {
     display: none;
 }

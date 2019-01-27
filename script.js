@@ -544,11 +544,16 @@ function logTicketSale(info) {
 
     return appendPurchaseToSheet(info)
 
-        .then(() => Swal(
-            `Give them ${info.quantity} ${info.ticketType} ticket${plural}!`,
-            'The purchase has been logged in the spreadsheet. Yeet.',
-            'success'
-        ))
+        .then(() => {
+            gtag("event", "ticket_sale", {
+                event_label: info.ticketType
+            });
+            return Swal(
+                `Give them ${info.quantity} ${info.ticketType} ticket${plural}!`,
+                'The purchase has been logged in the spreadsheet. Yeet.',
+                'success'
+            );
+        })
 
         // ran if the api throws an error
         .catch(res => {

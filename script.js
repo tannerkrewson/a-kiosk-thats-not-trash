@@ -451,9 +451,10 @@ function confirmPayment(info) {
 
     const plural = info.quantity !== 1 ? 's' : '';
 
+    // toLocaleString adds commas to numbers
     return Swal({
-        title: `Ask them for $${totalCost}.`,
-        text: `They will receive ${info.quantity} ${info.ticketType} ticket${plural} at $${ticketPrice} per ticket.`,
+        title: `Ask them for $${totalCost.toLocaleString()}.`,
+        text: `They will receive ${info.quantity.toLocaleString()} ${info.ticketType} ticket${plural} at $${ticketPrice.toLocaleString()} per ticket.`,
         type: 'warning',
         showCancelButton: true,
         confirmButtonText: 'I got the money!'
@@ -555,7 +556,7 @@ function logTicketSale(info) {
                 event_label: info.ticketType
             });
             return Swal(
-                `Give them ${info.quantity} ${info.ticketType} ticket${plural}!`,
+                `Give them ${info.quantity.toLocaleString()} ${info.ticketType} ticket${plural}!`,
                 'The purchase has been logged in the spreadsheet. Yeet.',
                 'success'
             );
@@ -720,7 +721,7 @@ function showTicketTypes(allTicketTypes) {
         thisButton.find('.price').html(priceBadge);
 
         // update the sold badge
-        thisButton.find('.sold').html(ticketType.sold + ' sold');
+        thisButton.find('.sold').html(ticketType.sold.toLocaleString() + ' sold');
     }
 }
 

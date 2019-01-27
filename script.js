@@ -711,7 +711,13 @@ function showTicketTypes(allTicketTypes) {
         }
 
         // update the price badge
-        thisButton.find('.price').html('$' + ticketType.price);
+        let priceBadge;
+        if (parseInt(ticketType.price) !== 0) {
+            priceBadge = '$' + ticketType.price;
+        } else {
+            priceBadge = 'Free';
+        }
+        thisButton.find('.price').html(priceBadge);
 
         // update the sold badge
         thisButton.find('.sold').html(ticketType.sold + ' sold');

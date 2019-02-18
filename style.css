@@ -64,10 +64,13 @@ footer {
 #student-options {
     display: none;
 }
- #guest-options {
+#guest-options {
     display: none;
 }
 #ga-options {
+    display: none;
+}
+#discount-options {
     display: none;
 }
 

@@ -112,6 +112,7 @@ function hideAll() {
 function resetTicketEntry() {
     $('#banner-id-input').val('');
     $('#quantity-input').val('');
+    $('#apply-discount').prop("checked", false).change();
 }
 
 function updateGuestMaxDisplay(guestMax) {
@@ -123,6 +124,15 @@ function updateSheetLink(sheetLink) {
     $('#sheet-link-button').on('click', () => {
         window.open(sheetLink);
     });
+}
+
+function updateDiscount (discount) {
+    if (discount.enabled) {
+        $('#discount').show();
+        $('#discount-amount-display').html('$' + discount.amount);
+    } else {
+        $('#discount').hide();
+    }
 }
 
 function showLoading() {
@@ -160,10 +170,19 @@ $("#sheet-setup").on('submit', event => {
         ticketType.isOffered = ticketTypesToOffer.includes(ticketType.name);
         ticketType.sold = 0;
     }
+    let discount = {
+        enabled: $('#discount-check').is(':checked'),
+        applied: false,
+        amount: 0
+    };
+
+    if (discount.enabled) {
+        discount.amount = parseInt($('#discount-amount').val());
+    }
 
     let guestMax = $('#guest-max').val();
     
-    let info = { sheetLink, sheetId, ticketTypes, guestMax };
+    let info = { sheetLink, sheetId, ticketTypes, guestMax, discount };
 
     // if the info is good, this will show ticket entry ui
     validateInfo(info);
@@ -180,6 +199,13 @@ function checkForSavedInfoFromCookies() {
 
         // check the boxes of what tickets are offered
         checkSelectedTicketTypes(savedInfo.ticketTypes);
+    }
+
+    if (savedInfo.discount.enabled) {
+        $('#discount-check').prop("checked", true).change();
+        $('#discount-amount').val(savedInfo.discount.amount);
+    } else {
+        $('#discount-check').prop("checked", false).change();
     }
     
     // fill in the other two sheet settings boxes
@@ -204,6 +230,11 @@ function validateInfo(info) {
 
             if (!validatePrices(info)) {
                 throw 'Invalid ticket prices.';
+            }
+            
+            if (info.discount.enabled && (isNaN(info.discount.amount) || info.discount.amount < 0)) {
+                info.discount.amount = 0;
+                throw 'Invalid discount amount.';
             }
 
             const isGuestSelected = info.ticketTypes.find(type => type.name === 'Guest').isOffered;
@@ -255,7 +286,6 @@ function validatePrices(info) {
 TICKET_TYPE_LGI_GROUP.on('click', e => {
     const selectedTicketType = e.currentTarget.getAttribute('value').toLowerCase();
     $('#' + selectedTicketType + '-radio').prop("checked", true).change();
-
 });
  
 TICKET_TYPE_RADIO_GROUP.on('change', e => {  
@@ -294,6 +324,15 @@ TICKETS_TO_OFFER_CHECK_GROUP.on('change', () => {
             $(selector).hide();
         }
     }    
+});
+
+$('#discount-check').on('change', () => {
+    let enableDiscount = $('#discount-check').is(':checked');
+    if (enableDiscount) {
+        $('#discount-options').show();
+    } else {
+        $('#discount-options').hide();
+    }
 });
 
 $('#settings').on('click', () => showScreen('#sheet-setup'));
@@ -364,12 +403,15 @@ function callForLatestTicketCounts(info) {
 }
 
 function prepTicketEntry(info) {
+    info.discount.applied = false;
+
     callForLatestTicketCounts(info)
         .then(() => {            
             showScreen('#ticket-entry');
             resetTicketEntry();
         
             showTicketTypes(info.ticketTypes);
+            updateDiscount(info.discount);
             updateGuestMaxDisplay(info.guestMax);
             updateSheetLink(info.sheetLink);
         
@@ -387,6 +429,8 @@ function prepTicketEntry(info) {
         info.bannerId = $('#banner-id-input').val();
         info.quantity = $('#quantity-input').val();
         info.ticketType = getSelectedTicketType();
+
+        info.discount.applied = $('#apply-discount').is(':checked');
 
         let ticketSalePromise;
         switch (info.ticketType) {
@@ -442,7 +486,11 @@ function sellGATickets(info) {
 
 function confirmPayment(info) {
     const ticketPrice = getTicketPrice(info);
-    const totalCost = ticketPrice * info.quantity;
+    let totalCost = ticketPrice * info.quantity;
+
+    if (info.discount.applied) {
+        totalCost -= info.discount.amount * info.quantity;
+    }
 
     // if tickets are free, skip confirmation
     if (totalCost === 0) {
@@ -451,10 +499,18 @@ function confirmPayment(info) {
 
     const plural = info.quantity !== 1 ? 's' : '';
 
+    let confirmationText = `They will receive ${info.quantity.toLocaleString()} ${info.ticketType} ticket${plural} `;
+    confirmationText += `at $${ticketPrice.toLocaleString()} per ticket`;
+
+    if (info.discount.applied) {
+        confirmationText += ` with a $${info.discount.amount} coupon applied`
+    }
+    confirmationText += '.';
+
     // toLocaleString adds commas to numbers
     return Swal({
         title: `Ask them for $${totalCost.toLocaleString()}.`,
-        text: `They will receive ${info.quantity.toLocaleString()} ${info.ticketType} ticket${plural} at $${ticketPrice.toLocaleString()} per ticket.`,
+        text: confirmationText,
         type: 'warning',
         showCancelButton: true,
         confirmButtonText: 'I got the money!'
@@ -583,14 +639,18 @@ function appendPurchaseToSheet(info) {
     const timestamp = weekday + ' ' + now.toLocaleString();
 
     const ticketPrice = getTicketPrice(info);
-    const totalCost = ticketPrice * info.quantity;
+    let totalCost = ticketPrice * info.quantity;
+
+    if (info.discount.applied) {
+        totalCost -= info.discount.amount * info.quantity;
+    }
 
     const newRow = [
         timestamp,
         info.ticketType,
         info.bannerId || 'n/a',
         info.quantity,
-        '$' + ticketPrice,
+        '$' + (ticketPrice - info.discount.amount),
         '$' + totalCost
     ];
 

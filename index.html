@@ -106,6 +106,22 @@
 						<input type="number" class="form-control" id="ga-price">
 					</div>
 				</div>
+				<div class="custom-control custom-switch">
+					<input class="custom-control-input" type="checkbox" id="discount-check">
+					<label class="custom-control-label" for="discount-check">
+						Enable optional discount
+					</label>
+				</div>
+				<br>
+				<div id="discount-options" class="form-group">
+					<label for="discount-amount">Enter discount amount:</label>
+					<div class="input-group mb-3">
+						<div class="input-group-prepend">
+							<span class="input-group-text">$</span>
+						</div>
+						<input type="number" class="form-control" id="discount-amount">
+					</div>
+				</div>
 				<div>
 					Logged in as <span id="current-user-name"></span>.
 				</div>
@@ -188,6 +204,15 @@
 						guest tickets.
 					</small>
 				</div>
+				<div id="discount" class="custom-control custom-checkbox">
+					<input type="checkbox" class="custom-control-input" id="apply-discount">
+					<label class="custom-control-label" for="apply-discount">
+						They have a 
+						<span id="discount-amount-display"></span>
+						coupon
+					</label>
+				</div>
+				<br>
 				<div class="center-button">
 					<button type="submit" class="btn btn-primary">Calculate price</button>
 					<div class="baby-break"></div>

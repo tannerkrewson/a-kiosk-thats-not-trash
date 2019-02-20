@@ -638,10 +638,11 @@ function appendPurchaseToSheet(info) {
     const weekday = now.toLocaleString('en-US', { weekday: 'short' });
     const timestamp = weekday + ' ' + now.toLocaleString();
 
-    const ticketPrice = getTicketPrice(info);
+    let ticketPrice = getTicketPrice(info);
     let totalCost = ticketPrice * info.quantity;
-
+    
     if (info.discount.applied) {
+        ticketPrice -= info.discount.amount;
         totalCost -= info.discount.amount * info.quantity;
     }
 
@@ -650,7 +651,7 @@ function appendPurchaseToSheet(info) {
         info.ticketType,
         info.bannerId || 'n/a',
         info.quantity,
-        '$' + (ticketPrice - info.discount.amount),
+        '$' + ticketPrice,
         '$' + totalCost
     ];
 

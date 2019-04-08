@@ -109,6 +109,15 @@ function hideAll() {
     $('#loading').hide();
 }
 
+function clearInfo (info) {
+    info.discount.applied = false;
+    info.collectInfo.name = "";
+    info.collectInfo.address = "";
+    info.collectInfo.city = "";
+    info.collectInfo.state = "";
+    info.collectInfo.zipcode = "";
+}
+
 function resetTicketEntry() {
     $('#banner-id-input').val('');
     $('#quantity-input').val('');
@@ -116,6 +125,9 @@ function resetTicketEntry() {
 
     $('#name-input').val('');
     $('#address-input').val('');
+    $('#city-input').val('');
+    $('#state-input').val('');
+    $('#zipcode-input').val('');
 }
 
 function updateGuestMaxDisplay(guestMax) {
@@ -182,7 +194,10 @@ $("#sheet-setup").on('submit', event => {
     let collectInfo = {
         enabled: $('#info-check').is(':checked'),
         name: '',
-        address: ''
+        address: '',
+        city: '',
+        state: '',
+        zipcode: ''
     };
 
     if (discount.enabled) {
@@ -430,14 +445,12 @@ function callForLatestTicketCounts(info) {
 }
 
 function prepTicketEntry(info) {
-    info.discount.applied = false;
-    info.collectInfo.name = "";
-    info.collectInfo.address = "";
+
+    clearInfo(info);
 
     callForLatestTicketCounts(info)
         .then(() => {            
             showScreen('#ticket-entry');
-            resetTicketEntry();
         
             showTicketTypes(info.ticketTypes);
             updateDiscount(info.discount);
@@ -462,6 +475,9 @@ function prepTicketEntry(info) {
         if (info.collectInfo.enabled) {
             info.collectInfo.name = $('#name-input').val();
             info.collectInfo.address = $('#address-input').val();
+            info.collectInfo.city = $('#city-input').val();
+            info.collectInfo.state = $('#state-input').val();
+            info.collectInfo.zipcode = $('#zipcode-input').val();
         }
 
         info.discount.applied = $('#apply-discount').is(':checked');
@@ -490,6 +506,12 @@ function prepTicketEntry(info) {
             // tell the user how much money to take from customer,
             // and log the ticket sale to the spreadsheet
             .then(() => confirmPayment(info))
+
+            // on successful purchase, clear all inputs
+            // I moved this here so that input would not 
+            // be cleared after an error, such as forgetting 
+            // to enter an address
+            .then(() => resetTicketEntry())
 
             // show error before resetting
             .catch(err => errorNoTicket(err))
@@ -527,6 +549,14 @@ function verifyNameAndAddress(info) {
 
     if (info.collectInfo.name.length === 0) return Promise.reject('Please enter a name.');
     if (info.collectInfo.address.length === 0) return Promise.reject('Please enter an address.');
+
+    if (info.collectInfo.city.length === 0) return Promise.reject('Please enter a city.');
+    if (info.collectInfo.state.length === 0) return Promise.reject('Please enter a state.');
+
+    // https://stackoverflow.com/a/10529103
+    if (!/^\d{5}([\-]?\d{4})?$/.test(info.collectInfo.zipcode)) {
+        return Promise.reject('Please enter a valid zip code.');
+    }
 
     return Promise.resolve();
 }
@@ -692,7 +722,7 @@ function appendPurchaseToSheet(info) {
         ticketPrice -= info.discount.amount;
         totalCost -= info.discount.amount * info.quantity;
     }
-
+    
     const newRow = [
         timestamp,
         info.ticketType,
@@ -701,14 +731,29 @@ function appendPurchaseToSheet(info) {
         '$' + ticketPrice,
         '$' + totalCost,
         info.collectInfo.name,
-        info.collectInfo.address
+        info.collectInfo.address,
+        info.collectInfo.city,
+        info.collectInfo.state,
+        info.collectInfo.zipcode
     ];
 
 	return appendRow(info.sheetId, newRow);
 };
 
 function appendHeader(spreadsheetId) {
-    return appendRow(spreadsheetId, ['Timestamp', 'Type', 'Banner ID', 'Quantity', 'Ticket Price', 'Total', 'Name', 'Address']);
+    return appendRow(spreadsheetId, [
+        'Timestamp',
+        'Type',
+        'Banner ID',
+        'Quantity',
+        'Ticket Price',
+        'Total',
+        'Name',
+        'Address',
+        'City',
+        'State',
+        'Zip Code'
+    ]);
 }
 
 function appendRow(spreadsheetId, newRow) {

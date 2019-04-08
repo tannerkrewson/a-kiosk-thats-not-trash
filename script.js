@@ -389,12 +389,6 @@ $('#banner-id-input').on('change', () => {
         $('#banner-id-input').val(val.substring(1, 10));
         return;
     }
-
-    // if they type more than 9 digits, remove the end
-    if (val.length > 9) {
-        $('#banner-id-input').val(val.substring(0, 9));
-        return;
-    }
 });
 
 $('#settings').on('click', () => showScreen('#sheet-setup'));

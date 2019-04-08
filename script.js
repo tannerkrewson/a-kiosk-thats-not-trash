@@ -626,7 +626,6 @@ function verifyAndNormalizeBannerId(info) {
         return Promise.reject('The banner ID must be 9 digits long.');
     }
 
-    info.bannerId = info.bannerId.replace(/^0+/, ''); // remove leading zeros
     return Promise.resolve();
 }
 
@@ -771,15 +770,16 @@ function appendRow(spreadsheetId, newRow) {
 // counts the number of tickets of the given type, by
 // the given banner id
 function countBoughtTickets(allPurchases, ticketType, bannerId) {
-    let count = 0;
+    const leadingZerolessBannerId = bannerId.replace(/^0+/, '');
 
+    let count = 0;
     for (let thisTicket of allPurchases) {
         const thisTicketType = thisTicket[0];
         const thisTicketBannerId = thisTicket[1];
         const thisTicketQuantity = thisTicket[2];
 
         const isSameTicketType = thisTicketType === ticketType;
-        const isSameBannerId = thisTicketBannerId === bannerId;
+        const isSameBannerId = thisTicketBannerId === bannerId || thisTicketBannerId === leadingZerolessBannerId;
 
         if (isSameTicketType && isSameBannerId) {
             count += parseInt(thisTicketQuantity);

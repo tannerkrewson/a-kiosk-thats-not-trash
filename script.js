@@ -281,6 +281,7 @@ function validateInfo(info) {
             // expires in 2 months
             Cookies.set('info', info, { expires: 60 });
 
+            resetTicketEntry();
             prepTicketEntry(info);
         })
         .catch(err => {
@@ -377,6 +378,25 @@ $('#info-check').on('change', () => {
     }
 });
 
+$('#banner-id-input').on('change', () => {
+    const val = $('#banner-id-input').val();
+
+    // the new card scanner we bought has a % 
+    // at the beginning and some extra shit at 
+    // the end, so let's remove those if we 
+    // detect them
+    if (val.startsWith('%') && val.endsWith('?')) {
+        $('#banner-id-input').val(val.substring(1, 10));
+        return;
+    }
+
+    // if they type more than 9 digits, remove the end
+    if (val.length > 9) {
+        $('#banner-id-input').val(val.substring(0, 9));
+        return;
+    }
+});
+
 $('#settings').on('click', () => showScreen('#sheet-setup'));
 
 function checkIfSheetValid(spreadsheetId) {
@@ -451,6 +471,8 @@ function prepTicketEntry(info) {
     callForLatestTicketCounts(info)
         .then(() => {            
             showScreen('#ticket-entry');
+
+            checkBannerIdInputEnter(info);
         
             showTicketTypes(info.ticketTypes);
             updateDiscount(info.discount);
@@ -889,4 +911,37 @@ function checkSelectedTicketTypes(allTicketTypes) {
             $(selector).prop("checked", false).change();
         }
     }
+}
+
+// the new card reader we bought hits enter after it 
+// types the card number, submitting the form prematurely.
+// this function turns off the form submission on enter 
+// for ticket types that have info to be entered after 
+// the banner id.
+function checkBannerIdInputEnter(info) {
+    const bannerIdInput = $('#banner-id-input');
+
+    bannerIdInput.off('keydown');
+    bannerIdInput.on('keydown', (e) => {
+    
+        // if the enter key was pressed
+        if (e.which == 13) {
+            const selectedTicketType = getSelectedTicketType();
+            const moreInfoRequired = info.discount.enabled || info.collectInfo.enabled;
+            
+            if (moreInfoRequired || selectedTicketType === 'Guest') {
+                // focus next input
+                if (selectedTicketType === 'Guest') {
+                    $('#quantity-input').focus();
+                } else if (info.collectInfo.enabled) {
+                    $('#name-input').focus();
+                } else if (info.discount.enabled) {
+                    $('#apply-discount').focus();
+                }
+                
+                // prevents form submission
+                return false;
+            }
+        }
+    });
 }

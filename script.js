@@ -113,6 +113,9 @@ function resetTicketEntry() {
     $('#banner-id-input').val('');
     $('#quantity-input').val('');
     $('#apply-discount').prop("checked", false).change();
+
+    $('#name-input').val('');
+    $('#address-input').val('');
 }
 
 function updateGuestMaxDisplay(guestMax) {
@@ -176,13 +179,19 @@ $("#sheet-setup").on('submit', event => {
         amount: 0
     };
 
+    let collectInfo = {
+        enabled: $('#info-check').is(':checked'),
+        name: '',
+        address: ''
+    };
+
     if (discount.enabled) {
         discount.amount = parseInt($('#discount-amount').val());
     }
 
     let guestMax = $('#guest-max').val();
     
-    let info = { sheetLink, sheetId, ticketTypes, guestMax, discount };
+    let info = { sheetLink, sheetId, ticketTypes, guestMax, discount, collectInfo };
 
     // if the info is good, this will show ticket entry ui
     validateInfo(info);
@@ -207,7 +216,16 @@ function checkForSavedInfoFromCookies() {
     } else {
         $('#discount-check').prop("checked", false).change();
     }
-    
+
+    //compatibility for cookies without this new feature
+    if (!savedInfo.collectInfo) {
+        savedInfo.collectInfo = {
+            enabled: false
+        }
+    }
+
+    $('#info-check').prop("checked", savedInfo.collectInfo.enabled).change();
+
     // fill in the other two sheet settings boxes
     $('#sheet-link').val(savedInfo.sheetLink);
     $('#guest-max').val(savedInfo.guestMax);
@@ -335,6 +353,15 @@ $('#discount-check').on('change', () => {
     }
 });
 
+$('#info-check').on('change', () => {
+    let enableInfoCollection = $('#info-check').is(':checked');
+    if (enableInfoCollection) {
+        $('#info-entry').show();
+    } else {
+        $('#info-entry').hide();
+    }
+});
+
 $('#settings').on('click', () => showScreen('#sheet-setup'));
 
 function checkIfSheetValid(spreadsheetId) {
@@ -404,6 +431,8 @@ function callForLatestTicketCounts(info) {
 
 function prepTicketEntry(info) {
     info.discount.applied = false;
+    info.collectInfo.name = "";
+    info.collectInfo.address = "";
 
     callForLatestTicketCounts(info)
         .then(() => {            
@@ -430,6 +459,11 @@ function prepTicketEntry(info) {
         info.quantity = $('#quantity-input').val();
         info.ticketType = getSelectedTicketType();
 
+        if (info.collectInfo.enabled) {
+            info.collectInfo.name = $('#name-input').val();
+            info.collectInfo.address = $('#address-input').val();
+        }
+
         info.discount.applied = $('#apply-discount').is(':checked');
 
         let ticketSalePromise;
@@ -449,7 +483,10 @@ function prepTicketEntry(info) {
         }
 
         //these will happen after every type of ticket sale
-        return ticketSalePromise       
+        return ticketSalePromise
+
+            .then(() => verifyNameAndAddress(info))
+
             // tell the user how much money to take from customer,
             // and log the ticket sale to the spreadsheet
             .then(() => confirmPayment(info))
@@ -482,6 +519,16 @@ function sellGuestTickets(info) {
 
 function sellGATickets(info) {
     return verifyQuantity(info);
+}
+
+function verifyNameAndAddress(info) {
+    // if name and address entry is not enabled, bypass this step
+    if (!info.collectInfo.enabled) return Promise.resolve();
+
+    if (info.collectInfo.name.length === 0) return Promise.reject('Please enter a name.');
+    if (info.collectInfo.address.length === 0) return Promise.reject('Please enter an address.');
+
+    return Promise.resolve();
 }
 
 function confirmPayment(info) {
@@ -652,14 +699,16 @@ function appendPurchaseToSheet(info) {
         info.bannerId || 'n/a',
         info.quantity,
         '$' + ticketPrice,
-        '$' + totalCost
+        '$' + totalCost,
+        info.collectInfo.name,
+        info.collectInfo.address
     ];
 
 	return appendRow(info.sheetId, newRow);
 };
 
 function appendHeader(spreadsheetId) {
-    return appendRow(spreadsheetId, ['Timestamp', 'Type', 'Banner ID', 'Quantity', 'Ticket Price', 'Total']);
+    return appendRow(spreadsheetId, ['Timestamp', 'Type', 'Banner ID', 'Quantity', 'Ticket Price', 'Total', 'Name', 'Address']);
 }
 
 function appendRow(spreadsheetId, newRow) {

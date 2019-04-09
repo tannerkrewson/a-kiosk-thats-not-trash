@@ -58,75 +58,93 @@
 				</div>
 				<div class="form-group" id="tickets-to-offer">
 					<label>Select which ticket types to offer: </label>
+
+					<div class="card bg-light kiosk-box">
+						<div class="custom-control custom-switch">
+							<input class="custom-control-input" type="checkbox" name="tickets-to-offer" id="student-check" value="Student">
+							<label class="custom-control-label" for="student-check">
+								Student
+							</label>
+						</div>
+						<div id="student-options" class="form-group">
+							<div class="baby-break"></div>
+							<label for="student-price">Student Ticket Price:</label>
+							<div class="input-group">
+								<div class="input-group-prepend">
+									<span class="input-group-text">$</span>
+								</div>
+								<input type="number" class="form-control" id="student-price">
+							</div>
+						</div>
+					</div>
+
+					<div class="card bg-light kiosk-box">
+						<div class="custom-control custom-switch">
+							<input class="custom-control-input" type="checkbox" name="tickets-to-offer" id="guest-check" value="Guest">
+							<label class="custom-control-label" for="guest-check">
+								Student Guest
+							</label>
+						</div>
+						<div id="guest-options" class="form-group">
+							<div class="baby-break"></div>
+							<label for="guest-price">Student Guest Ticket Price:</label>
+							<div class="input-group">
+								<div class="input-group-prepend">
+									<span class="input-group-text">$</span>
+								</div>
+								<input type="number" class="form-control" id="guest-price">
+							</div>
+							<label for="guest-max">Max guest tickets allowed per banner ID:</label>
+							<input type="number" class="form-control" id="guest-max" maxlength="2">
+						</div>
+					</div>
+
+					<div class="card bg-light kiosk-box">
+						<div class="custom-control custom-switch">
+							<input class="custom-control-input" type="checkbox" name="tickets-to-offer" id="ga-check" value="GA">
+							<label class="custom-control-label" for="ga-check">
+								General Admission
+							</label>
+						</div>
+						<div id="ga-options" class="form-group">
+							<div class="baby-break"></div>
+							<label for="ga-price">GA Ticket Price:</label>
+							<div class="input-group">
+								<div class="input-group-prepend">
+									<span class="input-group-text">$</span>
+								</div>
+								<input type="number" class="form-control" id="ga-price">
+							</div>
+						</div>
+					</div>
+
+				</div>
+
+				<div class="card bg-light kiosk-box">
+					<div class="mb-3">More Options: </div>
 					<div class="custom-control custom-switch">
-						<input class="custom-control-input" type="checkbox" name="tickets-to-offer" id="student-check" value="Student">
-						<label class="custom-control-label" for="student-check">
-							Student
+						<input class="custom-control-input" type="checkbox" id="discount-check">
+						<label class="custom-control-label" for="discount-check">
+							Enable optional discount
 						</label>
 					</div>
+					<div id="discount-options" class="form-group">
+						<div class="baby-break"></div>
+						<label for="discount-amount">Enter discount amount:</label>
+						<div class="input-group">
+							<div class="input-group-prepend">
+								<span class="input-group-text">$</span>
+							</div>
+							<input type="number" class="form-control" id="discount-amount">
+						</div>
+					</div>
+					<div class="baby-break"></div>
 					<div class="custom-control custom-switch">
-						<input class="custom-control-input" type="checkbox" name="tickets-to-offer" id="guest-check" value="Guest">
-						<label class="custom-control-label" for="guest-check">
-							Student Guest
+						<input class="custom-control-input" type="checkbox" id="info-check">
+						<label class="custom-control-label" for="info-check">
+							Enable name and address collection
 						</label>
 					</div>
-					<div class="custom-control custom-switch">
-						<input class="custom-control-input" type="checkbox" name="tickets-to-offer" id="ga-check" value="GA">
-						<label class="custom-control-label" for="ga-check">
-							General Admission
-						</label>
-					</div>
-				</div>
-				<div id="student-options" class="form-group">
-					<label for="student-price">Student Ticket Price:</label>
-					<div class="input-group mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">$</span>
-						</div>
-						<input type="number" class="form-control" id="student-price">
-					</div>
-				</div>
-				<div id="guest-options" class="form-group">
-					<label for="guest-price">Student Guest Ticket Price:</label>
-					<div class="input-group mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">$</span>
-						</div>
-						<input type="number" class="form-control" id="guest-price">
-					</div>
-					<label for="guest-max">Max guest tickets allowed per banner ID:</label>
-					<input type="number" class="form-control" id="guest-max" maxlength="2">
-				</div>
-				<div id="ga-options" class="form-group">
-					<label for="ga-price">GA Ticket Price:</label>
-					<div class="input-group mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">$</span>
-						</div>
-						<input type="number" class="form-control" id="ga-price">
-					</div>
-				</div>
-				<div class="custom-control custom-switch">
-					<input class="custom-control-input" type="checkbox" id="discount-check">
-					<label class="custom-control-label" for="discount-check">
-						Enable optional discount
-					</label>
-				</div>
-				<br>
-				<div id="discount-options" class="form-group">
-					<label for="discount-amount">Enter discount amount:</label>
-					<div class="input-group mb-3">
-						<div class="input-group-prepend">
-							<span class="input-group-text">$</span>
-						</div>
-						<input type="number" class="form-control" id="discount-amount">
-					</div>
-				</div>
-				<div class="custom-control custom-switch">
-					<input class="custom-control-input" type="checkbox" id="info-check">
-					<label class="custom-control-label" for="info-check">
-						Enable name and address collection
-					</label>
 				</div>
 				<br>
 				<div>
@@ -211,7 +229,7 @@
 						guest tickets.
 					</small>
 				</div>
-				<div id="info-entry">
+				<div id="info-entry" class="card bg-light kiosk-box">
 					<div class="form-group">
 						<label for="name-input">Name:</label>
 						<input type="text" class="form-control" id="name-input" autocomplete="off">
